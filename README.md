@@ -2,8 +2,7 @@
 ## mail http protocol
 
 协议结构体
-### mail_server_setting
-{
+### mail_server_setting{
     "id":"",
     "host":"",
     "type":"POP3,IMap,Exchage",
@@ -21,20 +20,24 @@
 http://127.0.0.1:port/setting/get_setting_list
 method: get
 response:
-### 
-{result:0, "server_settings":[mail_server_setting], "errmsg":""}
+### {
+    result:0, "server_settings":[mail_server_setting], "errmsg":""
+}
 
 http://127.0.0.1:port/setting/add_setting
 method: post
-### data:
-{"setting":mail_server_setting}
-### response:
-{"result":"", "id":"", "errmsg":""}
+### data:{
+"setting":mail_server_setting
+}
+### response:{
+    "result":"", "id":"", "errmsg":""
+}
 
 http://127.0.0.1:port/setting/edit_server_setting
 method: post
-### data:
-{"setting":mail_server_setting}
+### data:{
+    "setting":mail_server_setting
+}
 ### response:
 {"result":"", "id":"", "errmsg":""}
 
@@ -48,10 +51,12 @@ method: post
 ## 2.mail auth
 http://127.0.0.1:port/auth/login
 method:post
-### data:
-{"mail_account_name":"", "mail_account_psd":""}
-### response:
-{"result":0, "uid":"", "errmsg":""}
+### data:{
+    "mail_account_name":"", "mail_account_psd":""
+}
+### response:{
+    "result":0, "uid":"", "errmsg":""
+    }
 
 ## 3.mail content
 协议结构体：
