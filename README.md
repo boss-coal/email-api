@@ -1,9 +1,5 @@
 # email-api
-
-# install
-
-# license
-mail http protocol
+#mail http protocol
 
 协议结构体
 mail_server_setting{
@@ -82,3 +78,7 @@ method: post
 data:{"mail":mail_content}
 response:
 {"result":0, "id":"id of mail", "errmsg":""}
+
+# install
+
+# license
