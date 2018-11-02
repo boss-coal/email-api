@@ -50,9 +50,15 @@ response:
 
 ## 3.mail content
 协议结构体：
-### mail_title{"id":xx,"title":"", "sender":"xxx@mail.com", "time":"yyyy-mm-hh HH:MM:SS", "readed":"true/false", "sended":"true/false"}
-### attachment{"name":"", "remeto_url":url, "local_path":""}
-### mail_content{"id":xx,"title":"", "sender":"", "cc":"", "content":"", "attach_list":[attachment]}
+### mail_title{
+    "id":xx,"title":"", "sender":"xxx@mail.com", "time":"yyyy-mm-hh HH:MM:SS", "readed":"true/false",       "sended":"true/false"}
+    
+### attachment{
+"name":"", "remeto_url":url, "local_path":""}
+
+### mail_content{
+"id":xx,"title":"", "sender":"", "cc":"", "content":"", "attach_list":[attachment]}
+
 request:http://127.0.0.1:port/mail/get_recevice_mail_list?index=id&count=xxx;
 method:get
 response:
