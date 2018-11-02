@@ -18,9 +18,8 @@
     }
 
 ## 1.mail server setting
-http://127.0.0.1:port/setting/get_setting_list
-
-method: get
+    request:http://127.0.0.1:port/setting/get_setting_list
+    method:get
 ### response:
     {result:0, "server_settings":[mail_server_setting], "errmsg":""}
 
