@@ -87,7 +87,7 @@
 #### response:
     {result:0, "count":xxxx; "mail_list":[mail_title], "total_count":xxxx}
     
-### sent mail request
+### get sent mail request
     request:http://127.0.0.1:port/mail/get_send_mail_list?index=id&count=xxx;
     method:get
 #### response:
@@ -100,13 +100,22 @@
     {"result":0, "id":"", "content":mail_content, "errmsg":""}
 
 ## 4.mail operator
-#### operator mail request
-    request:http://127.0.0.1:port/mail/op?id=xxx?operator="read, unread, del"
-    method:get
+#### tag mail request
+    http://127.0.0.1:port/mail/tag"
+    method:post
+#### data
+    {"op_list"[{"id", "op":"read/unread/del"}]}
+#### response:
+    {"result":0, "id":"", "errmsg":""}
+
+#### edit mail content
+    http://127.0.0.1:port/mail/edit_mail"
+#### data
+    {"id":xx,"title":"", "sender":"", "cc":"", "content":"", "attach_list":[attachment]}
 #### response:
     {"result":0, "id":"", "errmsg":""}
     
-## 5.mail send
+## 5.send mail
 ### send mail request
     request:http://127.0.0.1:port/mail/send_mail
     method: post
