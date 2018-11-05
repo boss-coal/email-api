@@ -75,7 +75,7 @@
 ## 3.mail content
 协议结构体：
 ### mail_title
-    {"id":xx,"title":"", "sender":"xxx@mail.com", "time":"yyyy-mm-hh HH:MM:SS", "readed":"true/false",       "sended":"true/false"}
+    {"id":xx,"title":"", "sender":"xxx@mail.com", "time":"yyyy-mm-dd HH:MM:SS", "readed":"true/false",       "sended":"true/false"}
 ### attachment
     {"name":"", "remeto_url":url, "local_path":""}
 ### mail_content
@@ -87,7 +87,7 @@
 #### response:
     {result:0, "count":xxxx; "mail_list":[mail_title], "total_count":xxxx}
     
-### send mail request
+### sent mail request
     request:http://127.0.0.1:port/mail/get_send_mail_list?index=id&count=xxx;
     method:get
 #### response:
