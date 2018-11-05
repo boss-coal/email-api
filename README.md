@@ -64,7 +64,7 @@
 #### response:
     {"result":0, "uid":"", "mail_address":"" , "errmsg":""}
 
-### request
+### logout request
     http://127.0.0.1:port/auth/logout
     method:post
 #### data:
@@ -110,6 +110,7 @@
 
 #### edit mail content
     http://127.0.0.1:port/mail/edit_mail"
+    method:post
 #### data
     {"id":xx,"title":"", "sender":"", "cc":"", "content":"", "attach_list":[attachment]}
 #### response:
