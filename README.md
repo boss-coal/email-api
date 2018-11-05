@@ -18,13 +18,13 @@
     }
 
 ## 1.mail server setting
-### request
+### get mail server setting request
     request:http://127.0.0.1:port/setting/get_setting_list
     method:get
 #### response:
     {result:0, "server_settings":[mail_server_setting], "errmsg":""}
 
-### request
+### add mail server setting request
     http://127.0.0.1:port/setting/add_setting
     method: post
 #### data:
@@ -32,7 +32,7 @@
 #### response:
     {"result":"", "id":"", "errmsg":""}
 
-### request
+### edit mail server setting request
     http://127.0.0.1:port/setting/edit_setting
     method: post
 #### data:
@@ -40,7 +40,7 @@
 #### response:
     {"result":"", "id":"", "errmsg":""}
 
-### request
+### delete mail setting request
     http://127.0.0.1:port/setting/del_setting
     method: post
 #### data:
@@ -49,7 +49,13 @@
     {"result":0, "id":"", "errmsg":""}
 
 ## 2.mail auth
-### request
+    
+### get logined account request
+    http://127.0.0.1:port/auth/logined_account
+    method:get
+#### response
+    {"uid":0, "mail_account_name":""}
+### login request
     http://127.0.0.1:port/auth/login
     method:post
 #### data:
