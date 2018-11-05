@@ -81,31 +81,33 @@
 ### mail_content
     {"id":xx,"title":"", "sender":"", "cc":"", "content":"", "attach_list":[attachment]}
 
-### request
-    request:http://127.0.0.1:port/mail/get_recevice_mail_list?index=id&count=xxx;
+### get mail list request
+    request:http://127.0.0.1:port/mail/get_mail_list?uid=x&index=id&count=xxx;
     method:get
 #### response:
     {result:0, "count":xxxx; "mail_list":[mail_title], "total_count":xxxx}
     
-### request    
+### send mail request
     request:http://127.0.0.1:port/mail/get_send_mail_list?index=id&count=xxx;
     method:get
 #### response:
     {result:0, "count":xxxx; "mail_list":[mail_title], "total_count":xxxx}
-### request:
+
+### get mail content request:
     http://127.0.0.1:port/mail/get_mail_content?id=id;
     method:get
 #### response:
     {"result":0, "id":"", "content":mail_content, "errmsg":""}
 
 ## 4.mail operator
-#### request
-    request:http://127.0.0.1:port/mail/mark_as_readed?id=xxx?operator="read, unread, del"
+#### operator mail request
+    request:http://127.0.0.1:port/mail/op?id=xxx?operator="read, unread, del"
     method:get
 #### response:
     {"result":0, "id":"", "errmsg":""}
+    
 ## 5.mail send
-### request
+### send mail request
     request:http://127.0.0.1:port/mail/send_mail
     method: post
 #### data:
