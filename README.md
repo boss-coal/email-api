@@ -49,12 +49,13 @@
     {"result":0, "id":"", "errmsg":""}
 
 ## 2.mail auth
-    
+    logined_account_info:{"uid":0, "mail_account_name":""}
 ### get logined account request
     http://127.0.0.1:port/auth/logined_account
     method:get
 #### response
-    {"uid":0, "mail_account_name":""}
+    {"result":0, "account_info":[logined_account_info], "errmsg"}
+
 ### login request
     http://127.0.0.1:port/auth/login
     method:post
