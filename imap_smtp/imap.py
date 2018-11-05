@@ -1,15 +1,10 @@
 from twisted.internet import endpoints
 from twisted.internet import protocol
-from twisted.internet import ssl
-from twisted.internet import defer
-from twisted.internet import stdio
 from twisted.mail import imap4
-from twisted.protocols import basic
-from twisted.python import util
 from twisted.internet import reactor
 import logging
-from base import inlineCallbacks, returnValue
-from base_handler import Result
+from base import inlineCallbacks
+from handles.base_handler import Result
 
 class IMAP4Client(imap4.IMAP4Client):
     def __init__(self, username, password, **kwargs):

@@ -1,6 +1,6 @@
 from twisted.web import server
 from twisted.internet import endpoints
-from handler_tree import generate_tree
+from handles.handler_tree import generate_tree
 
 
 def start_server(reactor, port=8080):

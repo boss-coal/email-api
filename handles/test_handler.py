@@ -1,9 +1,9 @@
-from base_handler import BaseHandler, Result
+from handles.base_handler import BaseHandler, Result
 from base import inlineCallbacks, returnValue, defer
 from twisted.mail.smtp import sendmail
 from email.mime.text import MIMEText
-from account_manager import Account, AccountManager, getTestAccount
-from imap import loginImap
+from account_manager import getTestAccount
+from imap_smtp.imap import loginImap
 
 class TestHandler(BaseHandler):
 
