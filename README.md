@@ -55,7 +55,15 @@
 #### data:
     {"mail_account_name":"", "mail_account_psd":""}
 #### response:
-    {"result":0, "uid":"", "errmsg":""}
+    {"result":0, "uid":"", "mail_address":"" , "errmsg":""}
+
+### request
+    http://127.0.0.1:port/auth/logout
+    method:post
+#### data:
+    {"mail_account_name":"", "mail_account_psd":""}
+#### response:
+    {"result":0, "uid":"", "mail_address":"" , "errmsg":""}
 
 ## 3.mail content
 协议结构体：
