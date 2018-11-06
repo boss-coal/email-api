@@ -25,16 +25,17 @@ class TestHandler(BaseHandler):
     @inlineCallbacks
     def loginImap(self):
         account = self.account
-        conn_deferred = defer.Deferred().addBoth(self.onLoginImapResult)
+        conn_deferred = defer.Deferred().addCallback(self.onLoginImapSucess)
         loginImap(account.username, account.password, account.imap_host, conn_deferred)
         ret = yield conn_deferred
         returnValue(ret)
 
-    def onLoginImapResult(self, result):
-        if isinstance(result, Result):
-            return result.msg
-        result = result.value
-        return '%s, %s' % (result.msg, result.data)
+    def onLoginImapSucess(self, client):
+        return 'login imap success'
+
+    def onLoginImapFailed(self, err):
+        return str(err)
+
 
     @inlineCallbacks
     def sendMail(self):

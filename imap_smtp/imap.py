@@ -22,7 +22,6 @@ class IMAP4Client(imap4.IMAP4Client):
     def insecureLogin(self):
         try:
             ret = yield self.login(self.username, self.password)
-            logging.debug(ret)
             self.onLoginSuccess()
         except Exception, e:
             self.onLoginFailed(e)
@@ -30,12 +29,12 @@ class IMAP4Client(imap4.IMAP4Client):
     def onLoginSuccess(self):
         logging.debug('on login success')
         if self.conn_deferred:
-            self.conn_deferred.callback(Result(msg='login imap success'))
+            self.conn_deferred.callback(self)
 
     def onLoginFailed(self, err):
         logging.debug(err)
         if self.conn_deferred:
-            self.conn_deferred.errback(Result(result=-1, data=err))
+            self.conn_deferred.errback(err)
 
 
 
@@ -61,7 +60,7 @@ class IMAP4ClientFactory(protocol.ClientFactory):
 
     def clientConnectionFailed(self, connector, reason):
         if self.conn_deferred:
-            self.conn_deferred.errback(Result(result=-1, msg=reason))
+            self.conn_deferred.errback(reason)
             self.conn_deferred = None
 
 
