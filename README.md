@@ -87,8 +87,8 @@
 #### response:
     {result:0, "count":xxxx; "mail_list":[mail_title], "total_count":xxxx}
     
-### get sent mail request
-    request:http://127.0.0.1:port/mail/get_send_mail_list?index=id&count=xxx;
+### get send box mail request
+    request:http://127.0.0.1:port/mail/get_send_box_mail_list?index=id&count=xxx;
     method:get
 #### response:
     {result:0, "count":xxxx; "mail_list":[mail_title], "total_count":xxxx}
