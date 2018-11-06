@@ -87,8 +87,8 @@
 #### response:
     {result:0, "count":xxxx; "mail_list":[mail_title], "total_count":xxxx}
     
-### get sent mail request
-    request:http://127.0.0.1:port/mail/get_send_mail_list?index=id&count=xxx;
+### get send box mail request
+    request:http://127.0.0.1:port/mail/get_send_box_mail_list?index=id&count=xxx;
     method:get
 #### response:
     {result:0, "count":xxxx; "mail_list":[mail_title], "total_count":xxxx}
@@ -104,7 +104,15 @@
     http://127.0.0.1:port/mail/tag"
     method:post
 #### data
-    {"op_list"[{"id", "op":"read/unread/del"}]}
+    {"op_list":[{"id", "op":"read/unread/del"}]}
+#### response:
+    {"result":0, "id":"", "errmsg":""}
+
+#### save mail content
+    http://127.0.0.1:port/mail/save_mail"
+    method:post
+#### data
+    {"id":xx,"title":"", "to":"", "sender":"", "cc":"", "content":"", "attach_list":[attachment]}
 #### response:
     {"result":0, "id":"", "errmsg":""}
 
@@ -112,7 +120,7 @@
     http://127.0.0.1:port/mail/edit_mail"
     method:post
 #### data
-    {"id":xx,"title":"", "sender":"", "cc":"", "content":"", "attach_list":[attachment]}
+    {"id":xx,"title":"", "to":"", "sender":"", "cc":"", "content":"", "attach_list":[attachment]}
 #### response:
     {"result":0, "id":"", "errmsg":""}
     
