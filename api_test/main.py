@@ -33,7 +33,7 @@ webapp = Application(
         (r"/auth/login", handlers.AuthLoginHandler),
         (r"/auth/logout", handlers.AuthLogoutHandler),
         (r"/mail/get_mail_list", handlers.GetMailListHandler),
-        (r"/mail/get_send_mail_list", handlers.GetMailListHandler),
+        (r"/mail/get_send_box_mail_list", handlers.GetMailListHandler),
         (r"/mail/get_mail_content", handlers.GetMailContentHandler),
         (r"/mail/tag", handlers.TagMailListHandler),
         (r"/mail/save_mail", handlers.EditMailContentHandler),
