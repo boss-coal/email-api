@@ -108,11 +108,19 @@
 #### response:
     {"result":0, "id":"", "errmsg":""}
 
+#### save mail content
+    http://127.0.0.1:port/mail/save_mail"
+    method:post
+#### data
+    {"id":xx,"title":"", "to":"", "sender":"", "cc":"", "content":"", "attach_list":[attachment]}
+#### response:
+    {"result":0, "id":"", "errmsg":""}
+
 #### edit mail content
     http://127.0.0.1:port/mail/edit_mail"
     method:post
 #### data
-    {"id":xx,"title":"", "sender":"", "cc":"", "content":"", "attach_list":[attachment]}
+    {"id":xx,"title":"", "to":"", "sender":"", "cc":"", "content":"", "attach_list":[attachment]}
 #### response:
     {"result":0, "id":"", "errmsg":""}
     
