@@ -43,5 +43,6 @@ webapp = Application(
     autoreload=bool(options.autoreload),
 )
 
-# Run web app webapp.listen(options.port, options.address, xheaders=True)
+# Run web app 
+webapp.listen(options.port, options.address, xheaders=True)
 tornado.ioloop.IOLoop.current().start()

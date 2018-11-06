@@ -119,7 +119,7 @@ class SendMailHandler(tornado.web.RequestHandler):
         logging.debug("send mail request")
         res = {"result": 0, "id":0, "errmsg":""}
         try:
-            mail_id = self.request.get_argument("id")
+            mail_id = self.get_argument("id")
             res["id"] = int(mail_id)
         except Exception,e:
             res["result"] = 1
