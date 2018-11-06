@@ -6,13 +6,11 @@ import time
 import logging
 import traceback
 from tornado.web import asynchronous
-from tornado import gen
 import pdb
 
 
 class AuthLoginedHandler(tornado.web.RequestHandler):
     @asynchronous
-    @gen.coroutine 
     def _deal_request(self):
         logging.debug("auth logined request")
         logined_account = {"uid":1, "mail_account_name":"sss@ss.com"}
@@ -28,7 +26,6 @@ class AuthLoginedHandler(tornado.web.RequestHandler):
 
 class AuthLoginHandler(tornado.web.RequestHandler):
     @asynchronous
-    @gen.coroutine 
     def _deal_request(self):
         logging.debug("auth login request")
         res = {"status": 0, "id":1, "mail_account_name":"", "errmsg":""}
@@ -52,7 +49,6 @@ class AuthLoginHandler(tornado.web.RequestHandler):
 
 class AuthLogoutHandler(tornado.web.RequestHandler):
     @asynchronous
-    @gen.coroutine 
     def _deal_request(self):
         logging.debug("auth login request")
         res = {"status": 0, "uid":1, "errmsg":""}
