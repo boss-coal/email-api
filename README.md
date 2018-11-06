@@ -104,7 +104,7 @@
     http://127.0.0.1:port/mail/tag"
     method:post
 #### data
-    {"op_list"[{"id", "op":"read/unread/del"}]}
+    {"op_list":[{"id", "op":"read/unread/del"}]}
 #### response:
     {"result":0, "id":"", "errmsg":""}
 
