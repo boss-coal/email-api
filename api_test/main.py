@@ -9,7 +9,6 @@ from tornado.web import Application
 import tornado.options
 from tornado.options import define, options
 from tornado.web import asynchronous
-from tornado import gen
 import handlers
 
 define("port", 35000, int, "Listen port")
