@@ -4,7 +4,10 @@ from twisted.mail import imap4
 from twisted.internet import reactor
 import logging
 from base import inlineCallbacks
-from handles.base_handler import Result
+from twisted.internet import ssl
+from flanker import mime
+
+msg = mime.from_string('abc')
 
 class IMAP4Client(imap4.IMAP4Client):
     def __init__(self, username, password, **kwargs):
@@ -15,8 +18,25 @@ class IMAP4Client(imap4.IMAP4Client):
 
 
     def serverGreeting(self, caps):
+        logging.debug('caps: %s' % caps)
         self.serverCapabilities = caps
         self.insecureLogin()
+
+    def newMessages(self, exists, recent):
+        logging.debug('new messages {exists: %s, recent: %s}' % (exists, recent))
+
+    def flagsChanged(self, newFlags):
+        logging.debug('flags changed: %s' % newFlags)
+
+    @inlineCallbacks
+    def connectionLost(self, reason):
+        logging.debug('connection lost: %s' % reason)
+        # re-login
+        # yield self.insecureLogin()
+
+    def timeoutConnection(self):
+        logging.debug('client timeout')
+
 
     @inlineCallbacks
     def insecureLogin(self):
@@ -26,15 +46,20 @@ class IMAP4Client(imap4.IMAP4Client):
         except Exception, e:
             self.onLoginFailed(e)
 
+    @inlineCallbacks
     def onLoginSuccess(self):
         logging.debug('on login success')
         if self.conn_deferred:
             self.conn_deferred.callback(self)
+            self.conn_deferred = None
+        # lines = yield self.noop()
+        # logging.debug('noop: %s' % lines)
 
     def onLoginFailed(self, err):
         logging.debug(err)
         if self.conn_deferred:
             self.conn_deferred.errback(err)
+            self.conn_deferred = None
 
 
 
@@ -64,18 +89,17 @@ class IMAP4ClientFactory(protocol.ClientFactory):
             self.conn_deferred = None
 
 
-def loginImap(username, password, imap_host, conn_deferred=None):
+def loginImap(username, password, imap_host, conn_deferred=None, port=143):
     username = username.encode('ascii')
     password = password.encode('ascii')
     factory = IMAP4ClientFactory(username, password, conn_deferred=conn_deferred)
 
-    port = 143
     ep = endpoints.HostnameEndpoint(reactor, imap_host, port)
-    # if port 993
-    # if isinstance(imap_host, bytes):
-    #     imap_host = imap_host.decode('utf-8')
-    # context_factory = ssl.optionsForClientTLS(hostname=imap_host)
-    # ep = endpoints.wrapClientTLS(context_factory, ep)
+    if port == 993:
+        if isinstance(imap_host, bytes):
+            imap_host = imap_host.decode('utf-8')
+        context_factory = ssl.optionsForClientTLS(hostname=imap_host)
+        ep = endpoints.wrapClientTLS(context_factory, ep)
     ep.connect(factory)
 
 
