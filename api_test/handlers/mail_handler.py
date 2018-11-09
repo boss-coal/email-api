@@ -6,13 +6,11 @@ import time
 import logging
 import traceback
 from tornado.web import asynchronous
-from tornado import gen
 import pdb
 
 
 class GetMailListHandler(tornado.web.RequestHandler):
     @asynchronous
-    @gen.coroutine 
     def _deal_request(self):
         logging.debug("get mail list request")
         self.set_header("Content-Type", "application/json; charset=utf-8")
@@ -43,7 +41,6 @@ class GetMailListHandler(tornado.web.RequestHandler):
 
 class GetMailContentHandler(tornado.web.RequestHandler):
     @asynchronous
-    @gen.coroutine 
     def _deal_request(self):
         logging.debug("get mail content request")
         res = {"result":0, "errmsg":""}
@@ -67,10 +64,9 @@ class GetMailContentHandler(tornado.web.RequestHandler):
 
 class TagMailListHandler(tornado.web.RequestHandler):
     @asynchronous
-    @gen.coroutine 
     def _deal_request(self):
-        logging.debug("tag operator mail request")
-        res = {"result": 0, "uid":1, "errmsg":""}
+        logging.debug("tag operator mail request") 
+        res = {"result": 0, "uid":1, "errmsg":""} 
         self.set_header("Content-Type", "application/json; charset=utf-8")
         try:
             data = json.loads(self.request.body)
@@ -90,7 +86,6 @@ class TagMailListHandler(tornado.web.RequestHandler):
 
 class EditMailContentHandler(tornado.web.RequestHandler):
     @asynchronous
-    @gen.coroutine 
     def _deal_request(self):
         logging.debug("edit operator mail request")
         res = {"result": 0, "id":1, "errmsg":""}
@@ -99,7 +94,7 @@ class EditMailContentHandler(tornado.web.RequestHandler):
             data = json.loads(self.request.body)
             mail_id = data.get("id")
             mail_info = data.get("mail_info")
-        except Exception,e:
+        except Exception,e: 
             res["result"] = 1
             res["errmsg"] = "param error"
             self.write(json.dumps(res, encoding='utf8'))
@@ -114,7 +109,6 @@ class EditMailContentHandler(tornado.web.RequestHandler):
 
 class SendMailHandler(tornado.web.RequestHandler):
     @asynchronous
-    @gen.coroutine
     def _deal_request(self):
         logging.debug("send mail request")
         res = {"result": 0, "id":0, "errmsg":""}

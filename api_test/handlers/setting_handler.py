@@ -6,11 +6,9 @@ import time
 import logging
 import traceback
 from tornado.web import asynchronous
-from tornado import gen
 
 class GetMailSettingHandler(tornado.web.RequestHandler):
     @asynchronous
-    @gen.coroutine
     def _deal_request(self):
         logging.debug("get mail setting request")
         mail_server_setting = {
@@ -39,7 +37,6 @@ class GetMailSettingHandler(tornado.web.RequestHandler):
 
 class OpMailSettingHandler(tornado.web.RequestHandler):
     @asynchronous
-    @gen.coroutine 
     def _deal_request(self):
         logging.debug("add mail setting request")
         res = {"status": 0, "id":1, "errmsg":""}
@@ -65,7 +62,6 @@ class OpMailSettingHandler(tornado.web.RequestHandler):
 
 class DelMailSettingHandler(tornado.web.RequestHandler):
     @asynchronous
-    @gen.coroutine 
     def _deal_request(self):
         logging.debug("del mail setting request")
         res = {"status": 0, "id":1, "errmsg":""}
