@@ -3,11 +3,14 @@
 import sqlite3
 import config
 import logging
+import os
 
 class MailDao:
     def __init__(self):
         try:
-            self.conn = sqlite3.connect(config.db_name)
+            dirname, filename = os.path.split(os.path.abspath(__file__))
+            db_path = os.path.join(dirname, config.db_name)
+            self.conn = sqlite3.connect(db_path)
         except Exception, ex:
             logging.info("create db error %s", ex)
     
@@ -104,58 +107,40 @@ class MailDao:
         return []
 
     def add_setting(self, data_json):
-        c = self.conn.cursor()
-        self.conn.commit()
+        return self.insert_into_table_return_id("mail_setting", **data_json)
 
-
-    def query_setting(self, filter=None):
-        c = self.conn.cursor()
-        return c.execute("")
+    def query_setting(self, filter):
+        return self.select_from_table("mail_setting", **filter)
 
     def update_setting(self, setting_id, data_json):
-        c = self.conn.cursor()
-        self.conn.commit()
+        return self.update_table_values(setting_id, "mail_setting", **data_json)
 
     def add_mail_account(self, account_json):
-        c = self.conn.cursor()
-        self.conn.commit()
-
-    def del_mail_account(self, uid):
-        c = self.conn.cursor()
-        self.conn.commit()
+        return self.insert_into_table_return_id("mail_account", **account_json)
 
     def update_account(self, uid, update_data_json):
-        c = self.conn.cursor()
-        self.conn.commit()
+        return self.update_table_values(uid, "mail_account", **update_data_json)
 
     def query_account(self, filter_data):
-        c = self.conn.cursor()
-        return c.execute("")
+        return self.select_from_table("mail_account", **filter_data)
 
     def add_mail_title(self, mail_title):
-        c = self.conn.cursor()
-        self.conn.commit()
+        return self.insert_into_table_return_id("mail_title", **mail_title)
 
     def update_mail_title(self, mid, mail_title):
-        c = self.conn.cursor()
-        self.conn.commit()
+        return self.update_table_values(mid, "mail_title", **mail_title)
 
     def del_mail_title(self, mid):
-        c = self.conn.cursor()
-        self.conn.commit()
+        return self.delete_from_table("mail_title" , **{"id": mid})
 
     def query_mail_title(self, filter_data):
-        c = self.conn.cursor()
-        return c.execute("")
+        return self.select_from_table("mail_title", **filter_data)
 
-    def add_mail_content(self, mid, content):
-        c = self.conn.cursor()
-        self.conn.commit()
+    def add_mail_content(self, content):
+        return self.insert_into_table_return_id("mail_content", **content)
 
     def update_mail_content(self, mid, content):
-        c = self.conn.cursor()
-        self.conn.commit()
+        return self.update_table_values(mid, "mail_content", **content)
 
-    def query_mail_content(self, uid, filter_data):
-        c = self.conn.cursor()
-        return c.execute("")
+    def query_mail_content(self, filter_data):
+        return self.select_from_table("mail_content", **filter_data)
