@@ -5,7 +5,7 @@ import config
 import logging
 import os
 
-class MailDao:
+class DB:
     def __init__(self):
         try:
             dirname, filename = os.path.split(os.path.abspath(__file__))
@@ -144,3 +144,6 @@ class MailDao:
 
     def query_mail_content(self, filter_data):
         return self.select_from_table("mail_content", **filter_data)
+
+    def del_mail_content(self, cid):
+        return self.delete_from_table("mail_content", cid)
