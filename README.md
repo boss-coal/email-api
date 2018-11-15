@@ -82,17 +82,11 @@
     {"id":xx,"title":"", "sender":"", "cc":"", "content":"", "attach_list":[attachment]}
 
 ### get mail list request
-    request:http://127.0.0.1:port/mail/get_mail_list?uid=x&index=id&count=xxx;
+    request:http://127.0.0.1:port/mail/get_mail_list?uid=x&index=id&count=xxx&mail_box=xxx;
     method:get
 #### response:
     {result:0, "count":xxxx; "mail_list":[mail_title], "total_count":xxxx}
     
-### get send box mail request
-    request:http://127.0.0.1:port/mail/get_send_box_mail_list?index=id&count=xxx;
-    method:get
-#### response:
-    {result:0, "count":xxxx; "mail_list":[mail_title], "total_count":xxxx}
-
 ### get mail content request:
     http://127.0.0.1:port/mail/get_mail_content?id=id;
     method:get

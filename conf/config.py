@@ -1,3 +1,3 @@
 #!/usr/bin/python
 
-db_name="mail.db"
+db_name="db/db.sqlite3"
