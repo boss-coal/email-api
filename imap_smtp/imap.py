@@ -10,12 +10,23 @@ from flanker import mime
 msg = mime.from_string('abc')
 
 class IMAP4Client(imap4.IMAP4Client):
+
+    class LostListener:
+
+        def onConnectionLost(self):
+            pass
+
+
     def __init__(self, username, password, **kwargs):
         imap4.IMAP4Client.__init__(self)
         self.username = username
         self.password = password
         self.conn_deferred = kwargs.get('conn_deferred', None)
+        self.lost_listener = None
 
+    def setLostListener(self, listener):
+        assert listener is None or isinstance(listener, IMAP4Client.LostListener)
+        self.lost_listener = listener
 
     def serverGreeting(self, caps):
         logging.debug('caps: %s' % caps)
@@ -28,15 +39,20 @@ class IMAP4Client(imap4.IMAP4Client):
     def flagsChanged(self, newFlags):
         logging.debug('flags changed: %s' % newFlags)
 
-    @inlineCallbacks
     def connectionLost(self, reason):
         logging.debug('connection lost: %s' % reason)
-        # re-login
-        # yield self.insecureLogin()
+        self.onLost()
 
     def timeoutConnection(self):
         logging.debug('client timeout')
+        # self.close()
+        self.onLost()
 
+    def onLost(self):
+        if self.connected:
+            self.connected = False
+            if self.lost_listener:
+                self.lost_listener.onConnectionLost()
 
     @inlineCallbacks
     def insecureLogin(self):
@@ -46,7 +62,6 @@ class IMAP4Client(imap4.IMAP4Client):
         except Exception, e:
             self.onLoginFailed(e)
 
-    @inlineCallbacks
     def onLoginSuccess(self):
         logging.debug('on login success')
         if self.conn_deferred:

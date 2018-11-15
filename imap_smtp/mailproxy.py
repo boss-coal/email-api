@@ -4,14 +4,15 @@ from twisted.mail.imap4 import MessageSet
 import logging
 
 basic_mailbox_map = {
-  "INBOX": "INBOX",
-  "&g0l6P3ux-": "Drafts",
-  "&XfJT0ZAB-": "Sent Messages",
-  "&XfJSIJZk-": "Deleted Messages",
-  "&V4NXPpCuTvY-": "Junk",
-  "Deleted Messages": "Deleted Messages",
-  "Archive": "Archive",
-  "Junk": "Junk"
+    "INBOX": "INBOX",
+    "&g0l6P3ux-": "Drafts",
+    "&XfJT0ZAB-": "Sent Messages",
+    "&XfJSIJZk-": "Deleted Messages",
+    "&V4NXPpCuTvY-": "Junk",
+    "Deleted Messages": "Deleted Messages",
+    "Archive": "Archive",
+    "Junk": "Junk",
+    "Sent Messages": "Sent Messages"
 }
 
 class MailProxy:
@@ -47,8 +48,8 @@ class MailProxy:
         #     keys = sorted(mail_list)
         #     mail_list = [{'index': k, 'header': mail_list[k]} for k in keys]
         mail_list = yield self.client.fetchSpecific(msg_set, headerType='HEADER.FIELDS',
-                                                    headerArgs=['Message-Id', 'From', 'SUBJECT', 'Date'],
-        )
+                                                    headerArgs=['Message-Id', 'From', 'To', 'SUBJECT', 'Date'],
+                                                    )
         mail_uid_list = yield self.client.fetchUID(msg_set)
         mail_flags_list = yield self.client.fetchFlags(msg_set)
         logging.debug(mail_flags_list)
@@ -72,7 +73,8 @@ class MailProxy:
 
 
     @inlineCallbacks
-    def queryMailDetail(self,  message_uid):
+    def queryMailDetail(self, mailbox, message_uid):
+        self.client.select(mailbox)
         msg = yield self.client.fetchMessage(message_uid, True)
         returnValue(msg)
 

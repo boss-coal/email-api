@@ -1,4 +1,4 @@
-from base_handler import BaseHandler, Result
+from base_handler import BaseHandler, Result, CustomError
 from base import inlineCallbacks, returnValue, defer
 from imap_smtp.imap import loginImap
 from account_manager import accountManagerInstance, Account
@@ -20,10 +20,11 @@ class AuthoLoginedHandler(BaseHandler):
         self.all_deferred = defer.Deferred().addCallback(self.onCheckAll)
         self.rest = len(accounts)
         for i, account in enumerate(accounts):
+            accountManagerInstance.addAccount(account)
             self.login_result.append(None)
             conn_deferred = defer.Deferred().addCallback(self.onLoginImapSuccess, account, i)
             conn_deferred.addErrback(self.onLoginImapFail, account, i)
-            loginImap(account.username, account.password, account.imap_host, conn_deferred)
+            account.login(conn_deferred)
         yield self.all_deferred
 
         returnValue(Result(result=self.login_result))
@@ -37,14 +38,11 @@ class AuthoLoginedHandler(BaseHandler):
         logging.debug('check all')
 
     def onLoginImapSuccess(self, client, account, index):
-        account.mail_proxy = MailProxy(client)
         self.login_result[index] = {
             'account_name': account.username,
             'result': 0
         }
-        accountManagerInstance.addAccount(account)
         self.checkedOne()
-
 
     def onLoginImapFail(self, err, account, index):
         self.login_result[index] = {
@@ -61,45 +59,55 @@ class AuthoLoginedHandler(BaseHandler):
 class AuthLoginHandler(BaseHandler):
 
     # request args:
-    # @mail_account_name
-    # @mail_account_psd
-    # @mail_setting_id
+    # @mail_account_name(string)
+    # @mail_account_psd(string)
+    # @mail_setting_id(string)
+    # @relogin(bool) {optional}
     @inlineCallbacks
     def post(self):
-        self.imap_client = None
-
-        mail_account_name = self.getArg('mail_account_name')
-        mail_account_psd = self.getArg('mail_account_psd')
-        mail_setting_id = int(self.getArg('mail_setting_id'))
-
-        # todo: get real setting
-        mail_setting = test_data.getTestSetting(mail_setting_id)
+        self.error_res = None
 
         conn_deferred = defer.Deferred().addCallback(self.onLoginImapSuccess)
         conn_deferred.addErrback(self.onLoginImapFailed)
-        loginImap(mail_account_name, mail_account_psd,
-                        mail_setting['imap_server_host'],
-                        conn_deferred)
-        yield conn_deferred
 
-        res = Result()
-        # if conn success, client will be assigned
-        if self.imap_client:
+        mail_account_name = self.getArg('mail_account_name')
+        account = accountManagerInstance.getAccount(mail_account_name)
+        try:
+            if account:
+                if account.connected():
+                    returnValue({'msg': 'already connected'})
+                if self.getArg('relogin', necessary=False, default=False):
+                    account.login(conn_deferred=conn_deferred)
+                    yield conn_deferred
+                    if account.connected():
+                        returnValue({'msg': 'relogin success'})
+
+            mail_account_psd = self.getArg('mail_account_psd')
+            mail_setting_id = int(self.getArg('mail_setting_id'))
+            # todo: get real setting
+            mail_setting = test_data.getTestSetting(mail_setting_id)
+
             account = Account(mail_account_name, mail_account_psd,
                               mail_setting['smtp_server_host'],
                               mail_setting['imap_server_host'])
-            account.mail_proxy = MailProxy(self.imap_client)
             accountManagerInstance.addAccount(account)
-            res.extend(msg='login imap server success')
-        else:
-            res.status = -1
-            res.errmsg = 'login imap server failed: unknown error'
-        returnValue(res)
+
+            account.login(conn_deferred=conn_deferred)
+            yield conn_deferred
+
+            if account.connected():
+                returnValue({'msg': 'login imap server success'})
+
+        except CustomError, e:
+            returnValue(e.result)
+        except Exception, e:
+            logging.error(e)
+
+        returnValue({'errmsg': 'unknown error'})
 
 
     def onLoginImapSuccess(self, client):
-        self.imap_client = client
-
+        pass
 
     def onLoginImapFailed(self, err):
         logging.error(err)

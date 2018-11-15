@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from twisted.web.resource import Resource
 from twisted.internet import defer
 from twisted.internet.defer import inlineCallbacks, returnValue
@@ -22,7 +23,10 @@ class Result:
         self.result.update(kwargs)
 
     def dumps(self):
-        return json.dumps(self.result, ensure_ascii=False)
+        ret = json.dumps(self.result, ensure_ascii=False)
+        if isinstance(ret, unicode):
+            ret = ret.encode('utf-8')
+        return ret
 
 
 class CustomError:
