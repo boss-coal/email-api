@@ -1,4 +1,4 @@
-from twisted.internet import reactor
+from base import reactor
 from handles.http_server import start_server
 
 import logging

@@ -3,16 +3,23 @@ from base import inlineCallbacks, returnValue, defer
 from imap_smtp.imap import loginImap
 from account_manager import accountManagerInstance, Account
 from imap_smtp.mailproxy import MailProxy
-from conf import test_data
 import logging
 
-class AuthoLoginedHandler(BaseHandler):
+class BaseAuthHandler(BaseHandler):
+
+    @inlineCallbacks
+    def getSetting(self, setting_id):
+        settings = yield self.mail_dao.query_server_setting(id=setting_id)
+        if not settings:
+            self.finishWithError(errmsg='has no setting with id: %s' % setting_id)
+        returnValue(settings[0])
+
+class AuthLoginedHandler(BaseAuthHandler):
 
     @inlineCallbacks
     def post(self):
         self.login_result = []
-        # todo: get real logined user
-        accounts = test_data.getTestLoginedAccounts()
+        accounts = yield self.mail_dao.query_mail_account()
         if not accounts:
             res = yield defer.succeed(Result(msg="no logined account"))
             returnValue(res)
@@ -20,11 +27,15 @@ class AuthoLoginedHandler(BaseHandler):
         self.all_deferred = defer.Deferred().addCallback(self.onCheckAll)
         self.rest = len(accounts)
         for i, account in enumerate(accounts):
-            accountManagerInstance.addAccount(account)
+            ac = Account.fromDb(account)
+            setting = yield self.getSetting(account['mail_setting_id'])
+            ac.imap_host = setting['imap_server_host']
+            ac.smtp_host = setting['smtp_server_host']
+            accountManagerInstance.updateAccount(ac)
             self.login_result.append(None)
-            conn_deferred = defer.Deferred().addCallback(self.onLoginImapSuccess, account, i)
-            conn_deferred.addErrback(self.onLoginImapFail, account, i)
-            account.login(conn_deferred)
+            conn_deferred = defer.Deferred().addCallback(self.onLoginImapSuccess, ac, i)
+            conn_deferred.addErrback(self.onLoginImapFail, ac, i)
+            ac.login(conn_deferred)
         yield self.all_deferred
 
         returnValue(Result(result=self.login_result))
@@ -39,6 +50,7 @@ class AuthoLoginedHandler(BaseHandler):
 
     def onLoginImapSuccess(self, client, account, index):
         self.login_result[index] = {
+            'id': account.id,
             'account_name': account.username,
             'result': 0
         }
@@ -46,6 +58,7 @@ class AuthoLoginedHandler(BaseHandler):
 
     def onLoginImapFail(self, err, account, index):
         self.login_result[index] = {
+            'id': account.id,
             'account_name': account.username,
             'result': -1,
             'errmsg': 'login failed: %s' % err.value
@@ -56,7 +69,7 @@ class AuthoLoginedHandler(BaseHandler):
 
 
 
-class AuthLoginHandler(BaseHandler):
+class AuthLoginHandler(BaseAuthHandler):
 
     # request args:
     # @mail_account_name(string)
@@ -84,19 +97,26 @@ class AuthLoginHandler(BaseHandler):
 
             mail_account_psd = self.getArg('mail_account_psd')
             mail_setting_id = int(self.getArg('mail_setting_id'))
-            # todo: get real setting
-            mail_setting = test_data.getTestSetting(mail_setting_id)
+            mail_setting = yield self.getSetting(mail_setting_id)
 
-            account = Account(mail_account_name, mail_account_psd,
-                              mail_setting['smtp_server_host'],
-                              mail_setting['imap_server_host'])
-            accountManagerInstance.addAccount(account)
+            if account:
+                account.smtp_host = mail_setting['smtp_server_host']
+                account.imap_host = mail_setting['imap_server_host']
+                account.password = mail_account_psd
+                yield self.mail_dao.update_mail_account(account.dbFormat())
+            else:
+                account = Account(mail_account_name, mail_account_psd,
+                                  mail_setting['smtp_server_host'],
+                                  mail_setting['imap_server_host'])
+                account.setting_id = mail_setting_id
+                account.id = yield self.mail_dao.add_mail_account(mail_account_name, mail_account_psd, mail_setting_id)
+            accountManagerInstance.updateAccount(account)
 
             account.login(conn_deferred=conn_deferred)
             yield conn_deferred
 
             if account.connected():
-                returnValue({'msg': 'login imap server success'})
+                returnValue({'msg': 'login imap server success', 'id': account.id})
 
         except CustomError, e:
             returnValue(e.result)

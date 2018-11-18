@@ -1,5 +1,6 @@
 from base_handler import BaseHandler
-from base import inlineCallbacks, returnValue, accountManagerInstance
+from base import inlineCallbacks, returnValue
+from account_manager import accountManagerInstance
 
 class MailBaseHandler(BaseHandler):
 

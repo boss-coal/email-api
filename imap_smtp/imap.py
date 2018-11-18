@@ -3,11 +3,8 @@ from twisted.internet import protocol
 from twisted.mail import imap4
 from twisted.internet import reactor
 import logging
-from base import inlineCallbacks
 from twisted.internet import ssl
-from flanker import mime
 
-msg = mime.from_string('abc')
 
 class IMAP4Client(imap4.IMAP4Client):
 
@@ -54,15 +51,13 @@ class IMAP4Client(imap4.IMAP4Client):
             if self.lost_listener:
                 self.lost_listener.onConnectionLost()
 
-    @inlineCallbacks
     def insecureLogin(self):
-        try:
-            ret = yield self.login(self.username, self.password)
-            self.onLoginSuccess()
-        except Exception, e:
-            self.onLoginFailed(e)
+        self.login(self.username, self.password) \
+            .addCallback(self.onLoginSuccess) \
+            .addErrback(self.onLoginFailed)
 
-    def onLoginSuccess(self):
+
+    def onLoginSuccess(self, useless):
         logging.debug('on login success')
         if self.conn_deferred:
             self.conn_deferred.callback(self)
@@ -94,7 +89,7 @@ class IMAP4ClientFactory(protocol.ClientFactory):
         p.registerAuthenticator(imap4.PLAINAuthenticator(p.username))
         p.registerAuthenticator(imap4.LOGINAuthenticator(p.username))
         p.registerAuthenticator(
-                imap4.CramMD5ClientAuthenticator(p.username))
+            imap4.CramMD5ClientAuthenticator(p.username))
         self.p = None
         return p
 

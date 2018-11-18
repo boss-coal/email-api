@@ -1,16 +1,22 @@
-#!/usr/bin/python
+# -*- coding: utf-8 -*-
 
 import sqlite3
-import config
+import conf.config as config
 import logging
 import os
 
+from fields import parseQueryList
+from base import defer, inlineCallbacks, returnValue
+from twisted.enterprise import adbapi
+
 class DB:
     def __init__(self):
+        logging.debug('init db')
         try:
             dirname, filename = os.path.split(os.path.abspath(__file__))
             db_path = os.path.join(dirname, config.db_name)
-            self.conn = sqlite3.connect(db_path)
+            # self.conn = sqlite3.connect(db_path)
+            self.conn = adbapi.ConnectionPool('sqlite3', db_path)
         except Exception, ex:
             logging.info("create db error %s", ex)
     
@@ -18,96 +24,70 @@ class DB:
         if self.conn:
             self.conn.close()
 
-    def insert_into_table_return_id(self, table_name, **kwargs):
-        sql = "insert into %s (" % table_name
-        values = " values( "
-        i = 0
-        length = len(kwargs)
-        for (k, v) in kwargs.items():
-            sql += "`%s`" % k
-            values += "%s"
-            if i != length - 1:
-                sql += ","
-                values += ","
-            i += 1
-
-        sql += ")"
-        values += ")"
-
-        sql += values
-
-        with self.con as cur:
-            cur.execute(sql, kwargs.values())
-            return self.con.insert_id()
-
-        return 0
+    @inlineCallbacks
+    def insert_into_table(self, table_name, **kwargs):
+        return_id = True
+        if '_without_id_' in kwargs:
+            return_id = False
+            kwargs.pop('_without_id_')
+        sql = 'insert into %s (`%s`) values (%s)' % \
+              (table_name, '`, `'.join(kwargs.keys()), ', '.join(('?',)*len(kwargs)))
+        logging.debug(sql)
+        ret = yield self.conn.runOperation(sql, kwargs.values())
+        if return_id:
+            ret = yield self.conn.runQuery('select id from %s order by id desc limit 1' % table_name)
+            ret = ret[0][0]
+        returnValue(ret)
 
     def update_table_values(self, union_id, table_name, **kwargs):
-        sql = "update %s set " % table_name
-        i = 0
-        for (k, v) in kwargs.items():
-            sql += "`%s`=%%s" % (k,)
-            if i != len(kwargs) - 1:
-                sql += ","
-            i += 1
-        # kwargs[k] = self._convert_str(v)
+        if 'id' in kwargs:
+            kwargs.pop('id')
+        conditions = ['`%s`=?' % key for key in kwargs]
+        sql = "update %s set %s" % (table_name, ', '.join(conditions))
         if union_id is not None:
             sql += " where id=%s" % union_id
-
-        with self.con as cur:
-            cur.execute(sql, kwargs.values())
-            return self.con.affected_rows()
-
-        return 0
+        logging.debug(sql)
+        return self.conn.runOperation(sql, kwargs.values())
 
     def delete_from_table(self, table_name, **kwargs):
         sql = "delete from %s " % table_name
         if kwargs and len(kwargs) > 0:
-            sql += "where "
-        i = 0
-        for (k, v) in kwargs.items():
-            sql += " `%s`=%%s " % (k,)
-            if i != len(kwargs) - 1:
-                sql += " and "
-            i += 1
+            conditions = ['`%s`=?' % key for key in kwargs]
+            sql += " where %s" % ' and '.join(conditions)
+        logging.debug(sql)
+        return self.conn.runOperation(sql, kwargs.values())
 
-        with self.con as cur:
-            cur.execute(sql, kwargs.values())
-            return self.con.affected_rows()
-
-        return 0
-
+    @inlineCallbacks
     def select_from_table(self, table_name, filter=None, **kwargs):
         sql = "select * from %s " % table_name
-        if kwargs and len(kwargs) > 0:
-            sql += "where "
         values = []
-        i = 0
-        for (k, v) in kwargs.items():
-            if isinstance(v, list) or isinstance(v, tuple):
-                if not v:
-                    return []
-                seq = ','.join(['%s'] * len(v))
-                sql += " `%s` in (%s) " % (k, seq)
-                values += v
-            else:
-                sql += " `%s`=%%s " % (k,)
-                values.append(v)
-            if i != len(kwargs) - 1:
-                sql += " and "
-            i += 1
+        if kwargs and len(kwargs) > 0:
+            conditions = []
+            if '_like_' in kwargs:
+                like = kwargs['_like_']
+                kwargs.pop('_like_')
+                if isinstance(like, dict):
+                    conditions.extend(['`%s` like "%%%s%%"' % kv for kv in like.items()])
+            for (k, v) in kwargs.items():
+                if isinstance(v, list) or isinstance(v, tuple):
+                    conditions.append('`%s` in (%s)' % (k, ', '.join(('?',)*len(v))))
+                    values.extend(v)
+                else:
+                    conditions.append('`%s`=?' % k)
+                    values.append(v)
+            sql += ' where %s' % ' and '.join(conditions)
 
         if filter:
             sql += " " + filter
 
-        with self.con as cur:
-            cur.execute(sql, values)
-            return cur.fetchall()
-
-        return []
+        logging.debug(sql)
+        data = yield self.conn.runQuery(sql, values)
+        if data:
+            data = parseQueryList(data, table_name)
+        returnValue(data)
 
     def add_setting(self, data_json):
-        return self.insert_into_table_return_id("mail_setting", **data_json)
+        return self.insert_into_table("mail_setting", **data_json)
 
     def query_setting(self, filter):
         return self.select_from_table("mail_setting", **filter)
@@ -115,8 +95,11 @@ class DB:
     def update_setting(self, setting_id, data_json):
         return self.update_table_values(setting_id, "mail_setting", **data_json)
 
+    def del_setting(self, setting_id):
+        return self.delete_from_table('mail_setting', **{'id': setting_id})
+
     def add_mail_account(self, account_json):
-        return self.insert_into_table_return_id("mail_account", **account_json)
+        return self.insert_into_table("mail_account", **account_json)
 
     def update_account(self, uid, update_data_json):
         return self.update_table_values(uid, "mail_account", **update_data_json)
@@ -125,7 +108,7 @@ class DB:
         return self.select_from_table("mail_account", **filter_data)
 
     def add_mail_title(self, mail_title):
-        return self.insert_into_table_return_id("mail_title", **mail_title)
+        return self.insert_into_table("mail_title", **mail_title)
 
     def update_mail_title(self, mid, mail_title):
         return self.update_table_values(mid, "mail_title", **mail_title)
@@ -137,7 +120,7 @@ class DB:
         return self.select_from_table("mail_title", **filter_data)
 
     def add_mail_content(self, content):
-        return self.insert_into_table_return_id("mail_content", **content)
+        return self.insert_into_table("mail_content", **content)
 
     def update_mail_content(self, mid, content):
         return self.update_table_values(mid, "mail_content", **content)

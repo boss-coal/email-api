@@ -10,12 +10,31 @@ class Account(IMAP4Client.LostListener):
 
     # username is the keyword
     def __init__(self, username, password, smtp_host, imap_host):
+        self.id = -1
+        self.setting_id = -1
         self.username = username
         self.password = password
         self.smtp_host = smtp_host
         self.imap_host = imap_host
         self.mail_proxy = None
         self.connect_deferred = None
+
+    def dbFormat(self, with_id=True):
+        result = {
+            'mail_account_name': self.username,
+            'mail_account_psd': self.password,
+            'mail_setting_id': self.setting_id
+        }
+        if with_id:
+            result['id'] = self.id
+        return result
+
+    @staticmethod
+    def fromDb(account):
+        ac = Account(account['mail_account_name'], account['mail_account_psd'], '', '')
+        ac.id = account['id']
+        ac.setting_id = account['mail_setting_id']
+        return ac
 
     def login(self, conn_deferred=None):
         self.connect_deferred = conn_deferred
@@ -55,17 +74,14 @@ class AccountManager:
 
     def __init__(self):
         self.__account_dict__ = {}
-        # todo: read current accounts from db
 
-    def addAccount(self, account):
-        # todo: db
+    def updateAccount(self, account):
         if account.username in self.__account_dict__:
-            logging.warn('account{%s} has existed' % account.username)
+            logging.info('account{%s} has existed, update the detail' % account.username)
         self.__account_dict__[account.username] = account
 
     def removeAccount(self, username):
         self.__account_dict__.pop(username)
-        # todo: db
 
     def getAccount(self, username):
         return self.__account_dict__.get(username, None)

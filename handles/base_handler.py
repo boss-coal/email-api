@@ -4,6 +4,7 @@ from twisted.internet import defer
 from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.web import server
 import json, logging
+from db.dao import MailDao
 
 class Result:
     def __init__(self, status=0, errmsg='', extend=None, **kwargs):
@@ -37,10 +38,12 @@ class CustomError:
 
 class BaseHandler(Resource):
     isLeaf = True
+    # mail_dao = MailDao()
 
     def __init__(self):
         Resource.__init__(self)
         self.request = None
+        self.mail_dao = MailDao()
 
     def finish(self, result):
         self.request.setHeader('Content-type', 'application/json; charset=utf-8')
@@ -75,11 +78,15 @@ class BaseHandler(Resource):
         self.finish(Result(status=1, errmsg=str(err)))
 
     def getArg(self, key, necessary=True, default=None, arg_range=None):
-        if necessary and key not in self.request.args:
+        args = self.request.args
+        if necessary and key not in args:
             self.finishWithError(errmsg='argument \'%s\' is necessary' % key)
-        arg = self.request.args.get(key, default)
-        if arg and len(arg) == 1:
-            arg = arg[0]
+        if key in args:
+            arg = args[key]
+            if arg and len(arg) == 1:
+                arg = arg[0]
+        else:
+            arg = default
         if arg_range and arg not in arg_range:
             self.finishWithError(errmsg='argument \'%s\' should be one of %s' % (key, arg_range))
         return arg
@@ -89,5 +96,12 @@ class BaseHandler(Resource):
     def post(self):
         result = yield defer.succeed(Result(msg='post success'))
         returnValue(result)
+
+    def loadsJsonArg(self, arg):
+        arg = json.loads(arg)
+        for k, v in arg.items():
+            if isinstance(v, unicode):
+                arg[k] = v.encode('utf-8')
+        return arg
 
 

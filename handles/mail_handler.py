@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from base import inlineCallbacks, returnValue, defer
+from base import inlineCallbacks, returnValue, defer, reactor
 from mail_base_handler import MailBaseHandler
 from twisted.mail.smtp import sendmail
 from email.mime.text import MIMEText
@@ -7,7 +7,83 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.image import MIMEImage
 import json
 import logging
-import base64
+from db.dao import MailDao
+from util import toRemoteOrDbFormat
+
+mail_header_map = (
+    # (db_name, remote_name, default_value)
+    ('msg_id', 'message-id', ''),
+    ('uuid', 'uid', ''),
+    ('subject', 'subject', ''),
+    ('to', 'to', ''),
+    ('cc', 'cc', ''),
+    ('from', 'from', ''),
+    ('date', 'date', ''),
+)
+
+def mailHeader2DbFormat(mail, mailbox="", account_id=-1):
+    result = toRemoteOrDbFormat(mail, mail_header_map, (1, 0))
+    result['mail_box'] = mailbox
+    result['tag'] = json.dumps(mail.get('flags', ''))
+    result['mail_uid_id'] = account_id
+    return result
+
+def mailHeader2RemoteFormat(mail):
+    result = toRemoteOrDbFormat(mail, mail_header_map, (0, 1))
+    result['flags'] = json.loads(mail['tag'])
+    return result
+
+mail_content_map = (
+    ('uuid', 'UID', ''),
+    ('content', 'RFC822', ''),
+)
+
+def mailContent2DbFormat(mail, mailbox="", account_id=-1):
+    result = toRemoteOrDbFormat(mail, mail_content_map, (1, 0))
+    result['mail_box'] = mailbox
+    result['mail_uid_id'] = account_id
+    return result
+
+def mailContent2RemoteFormat(mail):
+    result = toRemoteOrDbFormat(mail, mail_content_map, (0, 1))
+    return result
+
+
+@inlineCallbacks
+def syncMailListToDb(mail_list, mailbox, account, sync_content=True):
+    logging.debug('syncDb %s' % mail_list)
+    if mail_list:
+        mail_dao = MailDao()
+        for mail in mail_list:
+            exist = yield mail_dao.query_mail_title(uuid=mail['uid'], mail_box=mailbox, mail_uid_id=account.id)
+            if not exist:
+                new_mail = mailHeader2DbFormat(mail, mailbox, account.id)
+                new_mail['_without_id_'] = True  # after insert to db, would not query the newest id
+                yield mail_dao.add_mail_title(new_mail)
+            if sync_content:
+                content_exist = yield mail_dao.query_mail_content(uuid=mail['uid'], mail_box=mailbox, mail_uid_id=account.id)
+                if not content_exist:
+                    content = yield account.mail_proxy.queryMailDetail(mailbox, mail['uid'])
+                    content = content.values()
+                    reactor.callLater(0, syncMailDetailToDb, content, mailbox, account)
+
+
+
+@inlineCallbacks
+def syncMailDetailToDb(mail_content_list, mailbox, account):
+    mail_dao = MailDao()
+    for mail_content in mail_content_list:
+        exist = yield mail_dao.query_mail_content(uuid=mail_content['UID'], mail_box=mailbox, mail_uid_id=account.id)
+        if not exist:
+            new_mail = mailContent2DbFormat(mail_content, mailbox, account.id)
+            new_mail['_without_id_'] = True
+            new_mail['content'] = new_mail['content'].decode('utf-8')
+            try:
+                yield mail_dao.add_mail_content(new_mail)
+            except Exception, e:
+                logging.error(e)
+
+
 
 class GetMailBoxListHandler(MailBaseHandler):
 
@@ -18,24 +94,61 @@ class GetMailBoxListHandler(MailBaseHandler):
 
 
 
-class GetMailListHandler(MailBaseHandler):
+class GetLocalMailListHandler(MailBaseHandler):
 
     @inlineCallbacks
     def task(self):
         mailbox = self.getArg('mailbox')
-        result = yield self.mail_proxy.queryMailList(mailbox)
+        count = int(self.getArg('count', necessary=False, default=0))
+        if count:
+            offset = int(self.getArg('offset', necessary=False, default=0))
+            filter = 'order by uuid desc limit %s, %s' % (offset, count)
+        else:
+            filter = ''
+            start = self.getArg('start', necessary=False)
+            if start:
+                filter += ' and uuid >= "%s"' % start
+            end = self.getArg('end', necessary=False)
+            if end:
+                filter += ' and uuid <= "%s"' % end
+            filter +=' order by uuid desc'
+        result = yield self.mail_dao.query_mail_title(filter=filter, mail_box=mailbox, mail_uid_id=self.account.id)
+        result = [mailHeader2RemoteFormat(item) for item in result]
         returnValue(result)
+
+
+
+class FetchMailListHandler(MailBaseHandler):
+
+    @inlineCallbacks
+    def task(self):
+        mailbox = self.getArg('mailbox')
+        start = self.getArg('start', necessary=False)
+        end = self.getArg('end', necessary=False)
+        use_uid = int(self.getArg('use_uid', necessary=False, default=1))
+        result = yield self.mail_proxy.queryMailList(mailbox, start, end, not not use_uid)
+        reactor.callLater(0, syncMailListToDb, result, mailbox, self.account)
+        returnValue({'data': result, 'count': len(result)})
+
 
 
 class GetMailContentHandler(MailBaseHandler):
 
     @inlineCallbacks
     def task(self):
+        # todo: to be confirmed, result should be parsed by client or server
         message_uid = self.getArg('message_uid')
         mailbox = self.getArg('mailbox')
+        # query from local database, if not exist, fetch it from remote server
+        result = yield self.mail_dao.query_mail_content(uuid=message_uid, mail_box=mailbox, mail_uid_id=self.account.id)
+        if result:
+            logging.debug('fetch %s\' message "%s" from db success' % (self.account.username, message_uid))
+            result = [mailContent2RemoteFormat(item) for item in result]
+            returnValue(result)
         result = yield self.mail_proxy.queryMailDetail(mailbox, message_uid)
-        # todo: to be confirmed, result should be parsed by client or server
-        returnValue(result)
+        result = result.values()
+        reactor.callLater(0, syncMailDetailToDb, result, mailbox, self.account)
+        returnValue({'data': result})
 
 
 class TagMailListHandler(MailBaseHandler):
@@ -44,17 +157,51 @@ class TagMailListHandler(MailBaseHandler):
     def task(self):
         message_uid = self.getArg('message_uid')
         mailbox = self.getArg('mailbox')
-        op = self.getArg('op', arg_range=('read', 'unread', 'del'))
+        op = self.getArg('op', arg_range=('read', 'unread', 'trash', 'del'))
+
+        mail = yield self.mail_dao.query_mail_title(uuid=message_uid, mail_box=mailbox, mail_uid_id=self.account.id)
+        if not mail:
+            remote_mail = yield self.mail_proxy.queryMailList(mailbox,start=message_uid,end=message_uid)
+            yield syncMailListToDb(remote_mail, mailbox, self.account)
+            mail = yield self.mail_dao.query_mail_title(uuid=message_uid, mail_box=mailbox, mail_uid_id=self.account.id)
+        mail = mail[0]
+        flags = json.loads(mail['tag'])
+        mail = {
+            'id': mail['id'],
+        }
+        if not flags:
+            flags = []
         if op == 'read':
-            yield self.mail_proxy.readMail(mailbox, message_uid)
+            ret = yield self.mail_proxy.readMail(mailbox, message_uid)
+            flags.extend(ret)
+            mail['tag'] = json.dumps(flags)
+            yield self.mail_dao.update_mail_title(mail)
         elif op == 'unread':
-            yield self.mail_proxy.readMail(mailbox, message_uid, False)
+            ret = yield self.mail_proxy.readMail(mailbox, message_uid, False)
+            [flags.remove(tag) for tag in ret]
+            mail['tag'] = json.dumps(flags)
+            yield self.mail_dao.update_mail_title(mail)
+        elif op == 'trash':
+            trash_box = 'Deleted Messages'
+            if mailbox == trash_box:
+                self.finishWithError(errmsg='the message has been in trash box')
+            yield self.mail_proxy.moveToTrash(mailbox, message_uid)
+            last_trash_mail = yield self.mail_dao.query_mail_title(mail_box=trash_box, mail_uid_id=self.account.id,
+                                                                   filter='order by uuid desc limit 1')
+            start = int(last_trash_mail[0]['uuid']) + 1 if last_trash_mail else 1
+            trash_mail = yield self.mail_proxy.queryMailList(trash_box, start)
+            if trash_mail:
+                reactor.callLater(0, syncMailListToDb, trash_mail, trash_box, self.account)
+                returnValue({'data': trash_mail, 'msg': 'new messages in trash'})
         elif op == 'del':
             yield self.mail_proxy.deleteMessage(mailbox, message_uid)
+            yield self.mail_dao.del_mail_title(mail)
+
         else:
             self.finishWithError()
 
         returnValue({'msg': 'operation success'})
+
 
 
 class SendMailHandler(MailBaseHandler):
@@ -117,6 +264,15 @@ class SendMailHandler(MailBaseHandler):
         else:
             yield self.sendMail(message, receivers)
             self.res = {'msg': 'sent successfully'}
+        sent_box = 'Sent Messages'
+        last_sent_mail = yield self.mail_dao.query_mail_title(mail_box=sent_box,
+                                                              mail_uid_id=self.account.id,
+                                                              filter='order by CAST(uuid AS int) desc limit 1')
+        start = int(last_sent_mail[0]['uuid']) + 1 if last_sent_mail else 1
+        sent_mail = yield self.mail_proxy.queryMailList(sent_box, start)
+        if sent_mail:
+                reactor.callLater(0, syncMailListToDb, sent_mail, sent_box, self.account)
+                returnValue({'data': sent_mail, 'msg': 'new messages in sent box'})
         returnValue(self.res)
 
     def getMessageString(self, message):
