@@ -17,6 +17,7 @@ mail_header_map = (
     ('subject', 'subject', ''),
     ('to', 'to', ''),
     ('cc', 'cc', ''),
+    ('bcc', 'bcc', ''),
     ('from', 'from', ''),
     ('date', 'date', ''),
 )
@@ -267,7 +268,7 @@ class SendMailHandler(MailBaseHandler):
         sent_box = 'Sent Messages'
         last_sent_mail = yield self.mail_dao.query_mail_title(mail_box=sent_box,
                                                               mail_uid_id=self.account.id,
-                                                              filter='order by CAST(uuid AS int) desc limit 1')
+                                                              filter='order by uuid desc limit 1')
         start = int(last_sent_mail[0]['uuid']) + 1 if last_sent_mail else 1
         sent_mail = yield self.mail_proxy.queryMailList(sent_box, start)
         if sent_mail:

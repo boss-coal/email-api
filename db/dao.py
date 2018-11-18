@@ -57,7 +57,7 @@ class MailDao:
     '''{ 
         "mail_uid": 0, #fk of mail account 
         "msg_id" : "",
-        "uuid" : "",
+        "uuid" : 0,
         "mail_box" : "",
         "subject" : "",
         "to" : "",

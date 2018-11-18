@@ -28,6 +28,7 @@ fields = {
         ('subject', 'varchar(1024) not null'),
         ('to', 'varchar(4096) not null'),
         ('cc', 'varchar(4096)'),
+        ('bcc', 'varchar(4096)'),
         ('from', 'varchar(4096) not null'),
         ('date', 'varchar(1024) not null'),
         ('tag', 'varchar(1024)'),

@@ -52,7 +52,7 @@ class AuthLoginedHandler(BaseAuthHandler):
         self.login_result[index] = {
             'id': account.id,
             'account_name': account.username,
-            'result': 0
+            'status': 0
         }
         self.checkedOne()
 
@@ -60,7 +60,7 @@ class AuthLoginedHandler(BaseAuthHandler):
         self.login_result[index] = {
             'id': account.id,
             'account_name': account.username,
-            'result': -1,
+            'status': -1,
             'errmsg': 'login failed: %s' % err.value
         }
         logging.error(self.login_result[index])
