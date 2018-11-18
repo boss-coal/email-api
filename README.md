@@ -1,9 +1,13 @@
 # email-api
 ## mail http protocol
-### note
+#### note
 (1) 参数的值是结构体时，先转为字符串 JSON.strinfify
 (2) 以下描述0代表整型，""代表字符串
 (3) 一般地，返回值status=0表示成功，其他表示失败
+(4) 部分操作，会由于服务器延迟，不会同步到最新内容，例如发送邮件后，拉取到的最近已发送邮件
+    可能不包含该邮件，需要重新拉取
+(5) 本地服务器是非阻塞的，可使用轮询的方法，同步新邮件状态
+
 协议结构体
 ### mail_server_setting
     {
@@ -190,9 +194,13 @@
     }
     (1) mime的形式大约如上所示, remember JSON.stringify
     (2) parts中的type，html与html-img冲突，当包含内嵌图片时选择html-img，否则可选择html
-    (3) 当使用html-img时，html-img part中content的<img>cid与img part的img_cid对应，如有多个<img>标签，则要有相应的img part
+    (3) 当使用html-img时，html-img part中content的<img>cid与img part的img_cid对应，如有多个<img>标签，
+        则要有相应的img part
     (4) attachment part可以有多个
-    (5) attachment part与img part的路径都使用文件的全路径，不需要传文件内容（减小跨进取传输的内容），本地服务器会根据路径读取内容并传送
+    (5) attachment part与img part的路径都使用文件的全路径，不需要传文件内容（减小跨进取传输的内容），
+        本地服务器会根据路径读取内容并传送
+    (6) 若传入参数mode，且设置为single，且收件人多于1个，则会启用"群发单显"功能
+    (7) 发送成功后，则会从远程服务器拉取最近已发送文件，并写入response与同步到本地数据库
 
 # install
     运行 python install.py会检查需要的库文件，并创建新的数据库
