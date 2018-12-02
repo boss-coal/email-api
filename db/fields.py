@@ -31,6 +31,7 @@ fields = {
         ('bcc', 'varchar(4096)'),
         ('from', 'varchar(4096) not null'),
         ('date', 'varchar(1024) not null'),
+        ('gm_time', 'int'),
         ('tag', 'varchar(1024)'),
         ('mail_uid_id', 'integer not null references "mail_account" ("id")'),
     ),

@@ -67,7 +67,14 @@ class DB:
                 like = kwargs['_like_']
                 kwargs.pop('_like_')
                 if isinstance(like, dict):
-                    conditions.extend(['`%s` like "%%%s%%"' % kv for kv in like.items()])
+                    _or_ = not not like.get('_or_')
+                    if _or_:
+                        like.pop('_or_')
+                    _likes_ = ['`%s` like "%%%s%%"' % kv for kv in like.items()]
+                    if _or_:
+                        conditions.append('(%s)' % ' or '.join(_likes_))
+                    else:
+                        conditions.extend(_likes_)
             for (k, v) in kwargs.items():
                 if isinstance(v, list) or isinstance(v, tuple):
                     conditions.append('`%s` in (%s)' % (k, ', '.join(('?',)*len(v))))

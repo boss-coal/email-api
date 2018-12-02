@@ -3,6 +3,7 @@ from base import returnValue, inlineCallbacks, defer
 from twisted.mail.imap4 import MessageSet
 import logging
 from flanker import mime
+from twisted.mail import imap4
 
 basic_mailbox_map = {
     "INBOX": "INBOX",
@@ -120,6 +121,21 @@ class MailProxy:
         op = self.client.addFlags if add else self.client.removeFlags
         return op(message_uid, flag, silent=1, uid=True)
 
+    @inlineCallbacks
+    def searchContactMailList(self, mailbox, contact):
+        yield self.client.select(mailbox)
+        FROM = imap4.Query(FROM=contact)
+        TO = imap4.Query(TO=contact)
+        # if mailbox == 'INBOX':
+        #     queries = FROM
+        # elif mailbox == 'Sent Messages':
+        #     queries = TO
+        # else:
+        #     queries = imap4.Or(FROM, TO)
+        queries = imap4.Or(FROM, TO)
+        logging.debug('search mail: %s' % queries)
+        mail_list = yield self.client.search(queries, uid=1)
+        returnValue(mail_list)
 
 
 

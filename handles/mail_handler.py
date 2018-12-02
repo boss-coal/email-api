@@ -8,7 +8,7 @@ from email.mime.image import MIMEImage
 import json
 import logging
 from db.dao import MailDao
-from util import toRemoteOrDbFormat
+from util import toRemoteOrDbFormat, gmTimestampFromAscTime, gmTimestapFromIsoDate
 
 mail_header_map = (
     # (db_name, remote_name, default_value)
@@ -27,6 +27,7 @@ def mailHeader2DbFormat(mail, mailbox="", account_id=-1):
     result['mail_box'] = mailbox
     result['tag'] = json.dumps(mail.get('flags', ''))
     result['mail_uid_id'] = account_id
+    result['gm_time'] = gmTimestampFromAscTime(result['date'])
     return result
 
 def mailHeader2RemoteFormat(mail):
@@ -131,6 +132,64 @@ class FetchMailListHandler(MailBaseHandler):
         reactor.callLater(0, syncMailListToDb, result, mailbox, self.account)
         returnValue({'data': result, 'count': len(result)})
 
+
+class GetLocalContactMailListHandler(MailBaseHandler):
+
+    @inlineCallbacks
+    def task(self):
+        contact = self.getArg('contact')
+        mailbox = self.getArg('mailbox', necessary=False, default=('INBOX', 'Sent Messages'))
+        order = ' order by gm_time desc'
+        filter = ''
+        query = {
+            '_like_': {
+                'from': contact,
+                'to': contact,
+                '_or_': True
+            },
+            'mail_uid_id': self.account.id
+        }
+        if mailbox == 'all':
+            mailbox = None
+        elif not isinstance(mailbox, tuple):
+            try:
+                box_list = json.loads(mailbox)
+                mailbox = box_list
+            except:
+                pass
+            finally:
+                query['mail_box'] = mailbox
+        else:
+            query['mail_box'] = mailbox
+
+        time_zone = int(self.getArg('zone', necessary=False, default=8))
+        after = self.getArg('after', necessary=False)
+        if after:
+            after = gmTimestapFromIsoDate(after, time_zone)
+            filter += ' and gm_time>=%s' % after
+        before = self.getArg('before', necessary=False)
+        if before:
+            before = gmTimestapFromIsoDate(before, time_zone)
+            filter += ' and gm_time<%s' % before
+
+        filter += order
+        mail_list = yield self.mail_dao.query_mail_title(filter=filter, **query)
+        returnValue({'data': mail_list, 'count': len(mail_list)})
+
+
+class FetchContactMailListHandler(MailBaseHandler):
+
+    @inlineCallbacks
+    def task(self):
+        contact = self.getArg('contact')
+        mailbox = self.getArg('mailbox', necessary=False, default=('INBOX', 'Sent Messages'))
+        if not isinstance(mailbox, tuple):
+            mailbox = tuple(mailbox)
+        result = []
+        for box in mailbox:
+            mail_list = yield self.mail_proxy.searchContactMailList(box, contact)
+            result.append({box: mail_list})
+        returnValue({'data': result})
 
 
 class GetMailContentHandler(MailBaseHandler):

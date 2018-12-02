@@ -8,10 +8,10 @@ import logging
 class BaseAuthHandler(BaseHandler):
 
     @inlineCallbacks
-    def getSetting(self, setting_id):
-        settings = yield self.mail_dao.query_server_setting(id=setting_id)
+    def getSetting(self, **kwargs):
+        settings = yield self.mail_dao.query_server_setting(**kwargs)
         if not settings:
-            self.finishWithError(errmsg='has no setting with id: %s' % setting_id)
+            self.finishWithError(errmsg='has no setting with condition: %s' % kwargs)
         returnValue(settings[0])
 
 class AuthLoginedHandler(BaseAuthHandler):
@@ -96,8 +96,12 @@ class AuthLoginHandler(BaseAuthHandler):
                         returnValue({'msg': 'relogin success'})
 
             mail_account_psd = self.getArg('mail_account_psd')
-            mail_setting_id = int(self.getArg('mail_setting_id'))
-            mail_setting = yield self.getSetting(mail_setting_id)
+            mail_setting_id = int(self.getArg('mail_setting_id', necessary=False, default=0))
+            if not mail_setting_id:
+                host = mail_account_name[mail_account_name.rindex('@')+1:]
+                mail_setting = yield self.getSetting(host=host)
+            else:
+                mail_setting = yield self.getSetting(id=mail_setting_id)
 
             if account:
                 account.smtp_host = mail_setting['smtp_server_host']
@@ -109,7 +113,15 @@ class AuthLoginHandler(BaseAuthHandler):
                                   mail_setting['smtp_server_host'],
                                   mail_setting['imap_server_host'])
                 account.setting_id = mail_setting_id
-                account.id = yield self.mail_dao.add_mail_account(mail_account_name, mail_account_psd, mail_setting_id)
+                exist = yield self.mail_dao.query_mail_account(mail_account_name=mail_account_name)
+                if exist:
+                    exist = exist[0]
+                    exist['mail_account_psd'] = mail_account_psd
+                    exist['mail_setting_id'] = mail_setting_id
+                    account.id = exist['id']
+                    yield self.mail_dao.update_mail_account(exist)
+                else:
+                    account.id = yield self.mail_dao.add_mail_account(mail_account_name, mail_account_psd, mail_setting_id)
             accountManagerInstance.updateAccount(account)
 
             account.login(conn_deferred=conn_deferred)

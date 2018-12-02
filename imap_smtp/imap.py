@@ -102,6 +102,7 @@ class IMAP4ClientFactory(protocol.ClientFactory):
 def loginImap(username, password, imap_host, conn_deferred=None, port=143):
     username = username.encode('ascii')
     password = password.encode('ascii')
+    logging.debug('ready to login {%s: %s} in %s' % (username, password, imap_host))
     factory = IMAP4ClientFactory(username, password, conn_deferred=conn_deferred)
 
     ep = endpoints.HostnameEndpoint(reactor, imap_host, port)

@@ -31,6 +31,8 @@ def generate_tree():
     mail.putChild('get_mail_content', mail_handler.GetMailContentHandler())
     mail.putChild('tag', mail_handler.TagMailListHandler())
     mail.putChild('send_mail', mail_handler.SendMailHandler())
+    mail.putChild('search_local_contact_mail_list', mail_handler.GetLocalContactMailListHandler())
+    mail.putChild('search_remote_contact_mail_list', mail_handler.FetchContactMailListHandler())
 
     return root
 
