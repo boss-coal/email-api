@@ -1,0 +1,20 @@
+[
+  {
+    "host": "163.com",
+    "imap_server_host": "imap.163.com",
+    "smtp_server_host": "smtp.163.com"
+  },
+
+  {
+    "host": "126.com",
+    "imap_server_host": "imap.126.com",
+    "smtp_server_host": "smtp.126.com"
+  },
+
+  {
+    "host": "qq.com",
+    "imap_server_host": "imap.qq.com",
+    "smtp_server_host": "smtp.qq.com"
+  }
+]
+

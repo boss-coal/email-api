@@ -207,5 +207,6 @@
     运行 python main.py，则启动本地服务器进程
 
 # config
+    (1) conf/provider.json配置初始的邮件服务提供商(mail_setting)
 
 # license

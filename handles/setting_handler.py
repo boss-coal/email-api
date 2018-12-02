@@ -2,6 +2,21 @@
 from base_handler import BaseHandler
 from base import inlineCallbacks, returnValue
 import json
+from db.dao import MailDao
+from util import getLocalFilePath
+
+@inlineCallbacks
+def initProviders():
+    mail_dao = MailDao()
+    settings = yield mail_dao.query_server_setting()
+    if not settings:
+        fid = open(getLocalFilePath('conf/provider.json'), 'r')
+        data = fid.read()
+        fid.close()
+        settings = json.loads(data)
+        for setting in settings:
+            yield mail_dao.add_server_setting(setting)
+
 
 class GetMailSettingHandler(BaseHandler):
 
@@ -24,6 +39,9 @@ class OpMailSettingHandler(BaseHandler):
             if 'host' not in setting or 'imap_server_host' not in setting or 'smtp_server_host' not in setting:
                 self.finishWithError(errmsg='setting should contain "host", "imap_server_host" and "smtp_server_host"')
             op = 'add'
+            exist = yield self.mail_dao.query_server_setting(host=setting['host'])
+            if exist:
+                self.finishWithError(errmsg='host{%s} is existed' % setting['host'])
             setting['id'] = yield self.mail_dao.add_server_setting(setting)
         returnValue({'msg': '%s success' % op, 'id': setting['id']})
 
