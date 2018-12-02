@@ -12,6 +12,8 @@ def createDb():
     if os.path.isfile(file_path):
         h = fileHash(file_path)
         new_file = os.path.join(dirname, 'db', '%s.%s' % (config.db_name, h))
+        if os.path.isfile(new_file):
+            os.remove(new_file)
         os.rename(file_path, new_file)
     f = open(file_path, 'wb')
     f.close()
