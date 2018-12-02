@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="UTF-8">
+    <title>example</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.5.17/dist/vue.js"></script>
+    <!--<script src="//unpkg.com/vue/dist/vue.js"></script>-->
+    <script src="//unpkg.com/element-ui@2.4.11/lib/index.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+</head>
+<body>
+<div id="app" style="height: 800px; overflow-y: auto">
+    <el-row>
+        <el-button type="primary" @click="toFetch" :disabled="ok">获取邮件</el-button>
+    </el-row>
+<template>
+    <el-table
+            :data="tableData"
+            style="width: 100%">
+        <el-table-column
+                prop="date"
+                label="日期"
+                width="300">
+        </el-table-column>
+        <el-table-column
+                prop="from"
+                label="来自"
+                width="240">
+        </el-table-column>
+        <el-table-column
+                prop="to"
+                label="发到"
+                width="240">
+        </el-table-column>
+        <el-table-column
+                prop="subject"
+                label="主题">
+        </el-table-column>
+    </el-table>
+</template>
+</div>
+<script src="example.js"></script>
+</body>
+</html>

@@ -47,6 +47,7 @@ class BaseHandler(Resource):
 
     def finish(self, result):
         self.request.setHeader('Content-type', 'application/json; charset=utf-8')
+        self.request.setHeader('Access-Control-Allow-Origin', '*')
         if isinstance(result, dict):
             result = Result(extend=result)
         elif isinstance(result, list) or isinstance(result, tuple):
