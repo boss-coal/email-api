@@ -61,6 +61,7 @@
         登录成功后，账号信息保存到数据库
     (2) 断线后，使用原密码重新登录：{"mail_account_name": "", "relogin": 1}
     (3) 断线后，手输密码重新登录，参数与初始登录一致，登录成功后，新密码会更新到数据库
+    (4) mail_setting_id改为可选，不传则从mail_account_name提取host，从数据库查找相应的setting
 #### response:
     {"status":0, "id":0, "errmsg":""}
 
@@ -131,6 +132,22 @@
     (1) mail_content {'UID': "", "RFC822": ""}, "RFC822"是MIME格式的字符串，可解析出邮件的各项信息
     (2) 优先从本地数据库获取邮件内容，若无则从远程服务器拉取，并同步到本地数据库
 
+### get contact mail list request:
+    http://127.0.0.1:port/mail/search_local_contact_mail_list
+#### data:
+    {"contact": "", "mailbox": "", "after": "2018-01-01", "before": "", "zone": 8}
+#### response:
+    same as local mail list
+#### note:
+    参数中, contact是必须的，其他都为可选
+    (1) a. mailbox为空时，默认从[INBOX, Sent Messages]中查找
+        b. mailbox=all，查找所有文件夹
+        c. mailbox=INBOX/Sent Message/...，查找单个文件夹
+        d. mailbox=JSON.stringify([...])，查找多个文件夹
+    (2) after与before使用yyyy-mm-dd形式的字符串，after包含当天，before不含当天，如after=2018-10-10
+        &before=2018-11-11，则查询2018-10-10到2018-11-10间的邮件；两者都为空，则不限日期
+    (3) zone，时区，与after和before配合使用，默认使用8(北京时间)（考虑到外贸，数据库存储的是gmt时间）
+    
 ## 4.mail operator
 #### tag mail request
     http://127.0.0.1:port/mail/tag"
