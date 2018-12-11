@@ -35,6 +35,7 @@ def main():
     try:
         # install "twisted", reference to https://github.com/twisted/twisted/blob/trunk/INSTALL.rst
         import twisted
+        import flanker
         system = platform.system()
         if system == 'Windows':
             # for windows, install pywin32
