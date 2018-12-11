@@ -9,6 +9,7 @@ import json
 import logging
 from db.dao import MailDao
 from util import toRemoteOrDbFormat, gmTimestampFromAscTime, gmTimestapFromIsoDate
+from flanker import mime
 
 mail_header_map = (
     # (db_name, remote_name, default_value)
@@ -80,6 +81,14 @@ def syncMailDetailToDb(mail_content_list, mailbox, account):
             new_mail = mailContent2DbFormat(mail_content, mailbox, account.id)
             new_mail['_without_id_'] = True
             new_mail['content'] = new_mail['content'].decode('utf-8')
+            msg = mime.from_string(new_mail['content'])
+            if msg.content_type.is_multipart():
+                for part in msg.parts:
+                    if part.content_type[0] == 'text/plain':
+                        new_mail['plain'] = part.body
+            else:
+                if msg.content_type[0] == 'text/plain':
+                    new_mail['plain'] = msg.body
             try:
                 yield mail_dao.add_mail_content(new_mail)
             except Exception, e:
