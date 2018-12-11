@@ -28,7 +28,7 @@ class AuthLoginedHandler(BaseAuthHandler):
         self.rest = len(accounts)
         for i, account in enumerate(accounts):
             ac = Account.fromDb(account)
-            setting = yield self.getSetting(account['mail_setting_id'])
+            setting = yield self.getSetting(id=account['mail_setting_id'])
             ac.imap_host = setting['imap_server_host']
             ac.smtp_host = setting['smtp_server_host']
             accountManagerInstance.updateAccount(ac)
