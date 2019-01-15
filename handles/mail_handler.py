@@ -75,9 +75,12 @@ def syncMailListToDb(mail_list, mailbox, account, sync_content=True):
 @inlineCallbacks
 def syncMailDetailToDb(mail_content_list, mailbox, account):
     mail_dao = MailDao()
+    result = []
     for mail_content in mail_content_list:
         exist = yield mail_dao.query_mail_content(uuid=mail_content['UID'], mail_box=mailbox, mail_uid_id=account.id)
-        if not exist:
+        if exist:
+            result.extend(exist)
+        else:
             new_mail = mailContent2DbFormat(mail_content, mailbox, account.id)
             new_mail['_without_id_'] = True
             new_mail['content'] = new_mail['content'].decode('utf-8')
@@ -89,10 +92,12 @@ def syncMailDetailToDb(mail_content_list, mailbox, account):
             else:
                 if msg.content_type[0] == 'text/plain':
                     new_mail['plain'] = msg.body
+            result.append(new_mail)
             try:
                 yield mail_dao.add_mail_content(new_mail)
             except Exception, e:
                 logging.error(e)
+    returnValue(result)
 
 
 
@@ -212,11 +217,14 @@ class GetMailContentHandler(MailBaseHandler):
         result = yield self.mail_dao.query_mail_content(uuid=message_uid, mail_box=mailbox, mail_uid_id=self.account.id)
         if result:
             logging.debug('fetch %s\' message "%s" from db success' % (self.account.username, message_uid))
-            result = [mailContent2RemoteFormat(item) for item in result]
-            returnValue(result)
+            # don't change result's format to mime-format, return it directly
+            # result = [mailContent2RemoteFormat(item) for item in result]
+            returnValue({'data': result})
         result = yield self.mail_proxy.queryMailDetail(mailbox, message_uid)
         result = result.values()
-        reactor.callLater(0, syncMailDetailToDb, result, mailbox, self.account)
+        # don't callLater, call sync-function directly, and return the result
+        # reactor.callLater(0, syncMailDetailToDb, result, mailbox, self.account)
+        result = yield syncMailDetailToDb(result, mailbox, self.account)
         returnValue({'data': result})
 
 
