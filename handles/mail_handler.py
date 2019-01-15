@@ -83,7 +83,7 @@ def syncMailDetailToDb(mail_content_list, mailbox, account):
         else:
             new_mail = mailContent2DbFormat(mail_content, mailbox, account.id)
             new_mail['_without_id_'] = True
-            new_mail['content'] = new_mail['content'].decode('utf-8')
+            new_mail['content'] = new_mail['content']
             msg = mime.from_string(new_mail['content'])
             if msg.content_type.is_multipart():
                 for part in msg.parts:
@@ -219,12 +219,14 @@ class GetMailContentHandler(MailBaseHandler):
             logging.debug('fetch %s\' message "%s" from db success' % (self.account.username, message_uid))
             # don't change result's format to mime-format, return it directly
             # result = [mailContent2RemoteFormat(item) for item in result]
-            returnValue({'data': result})
-        result = yield self.mail_proxy.queryMailDetail(mailbox, message_uid)
-        result = result.values()
-        # don't callLater, call sync-function directly, and return the result
-        # reactor.callLater(0, syncMailDetailToDb, result, mailbox, self.account)
-        result = yield syncMailDetailToDb(result, mailbox, self.account)
+        else:
+            result = yield self.mail_proxy.queryMailDetail(mailbox, message_uid)
+            result = result.values()
+            # don't callLater, call sync-function directly, and return the result
+            # reactor.callLater(0, syncMailDetailToDb, result, mailbox, self.account)
+            result = yield syncMailDetailToDb(result, mailbox, self.account)
+        # if expect to return mime content, comment follow line
+        [item.pop('content') for item in result]
         returnValue({'data': result})
 
 
