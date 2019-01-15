@@ -89,9 +89,13 @@ def syncMailDetailToDb(mail_content_list, mailbox, account):
                 for part in msg.parts:
                     if part.content_type[0] == 'text/plain':
                         new_mail['plain'] = part.body
+                    elif part.content_type[0] == 'text/html':
+                        new_mail['html'] = part.body
             else:
                 if msg.content_type[0] == 'text/plain':
                     new_mail['plain'] = msg.body
+                elif msg.content_type[0] == 'text/html':
+                        new_mail['html'] = msg.body
             result.append(new_mail)
             try:
                 yield mail_dao.add_mail_content(new_mail)

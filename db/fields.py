@@ -42,6 +42,7 @@ fields = {
         ('mail_box', 'varchar(128) not null'),
         ('mail_uid_id', 'integer not null references "mail_account" ("id")'),
         ('plain', 'text'),
+        ('html', 'text'),
     ),
 }
 
