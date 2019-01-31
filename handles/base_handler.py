@@ -5,6 +5,8 @@ from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.web import server
 import json, logging
 from db.dao import MailDao
+import inspect
+
 
 class Result:
     def __init__(self, status=0, errmsg='', extend=None, **kwargs):
@@ -104,5 +106,20 @@ class BaseHandler(Resource):
             if isinstance(v, unicode):
                 arg[k] = v.encode('utf-8')
         return arg
+
+    def putChild(self, path, child):
+        if child.isLeaf and not inspect.isclass(child):
+            Resource.putChild(self, path, child.__class__)
+        elif not child.isLeaf and inspect.isclass(child):
+            Resource.putChild(self, path, child())
+        else:
+            Resource.putChild(self, path, child)
+
+    def getChildWithDefault(self, path, request):
+        child = Resource.getChildWithDefault(self, path, request)
+        if inspect.isclass(child):
+            return child()
+        else:
+            return child
 
 
