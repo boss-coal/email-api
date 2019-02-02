@@ -82,13 +82,20 @@ class Account(IMAP4Client.LostListener):
     @inlineCallbacks
     def onConnectionLost(self, client):
         try:
+            remove_item = None
             for item in self.idle_proxy_set:
                 if item.client is client:
-                    self.idle_proxy_set.remove(item)
+                    remove_item = item
                     break
+            if remove_item:
+                self.idle_proxy_set.remove(remove_item)
+            remove_item = None
             for item in self.busy_proxy_set:
                 if item.client is client:
-                    self.busy_proxy_set.remove(item)
+                    remove_item = item
+                    break
+            if remove_item:
+                self.busy_proxy_set.remove(remove_item)
         finally:
             if not self.connected():
                 yield self.login()

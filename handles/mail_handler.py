@@ -66,7 +66,9 @@ def syncMailListToDb(mail_list, mailbox, account, sync_content=True):
             if sync_content:
                 content_exist = yield mail_dao.query_mail_content(uuid=mail['uid'], mail_box=mailbox, mail_uid_id=account.id)
                 if not content_exist:
-                    content = yield account.mail_proxy.queryMailDetail(mailbox, mail['uid'])
+                    mail_proxy = yield account.get_mail_proxy()
+                    content = yield mail_proxy.queryMailDetail(mailbox, mail['uid'])
+                    account.give_back_mail_proxy(mail_proxy)
                     content = content.values()
                     reactor.callLater(0, syncMailDetailToDb, content, mailbox, account)
 
