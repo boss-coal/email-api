@@ -17,12 +17,26 @@ basic_mailbox_map = {
     "Sent Messages": "Sent Messages"
 }
 
+_index_ = 0
+
 class MailProxy:
 
     def __init__(self, client):
         assert isinstance(client, IMAP4Client)
+        # self.idle_client_set = {client}
+        # self.busy_client_set = set([])
         self.client = client
         self.boxes = None
+
+    # @property
+    # def client(self):
+    #     value = self.idle_client_set.pop()
+    #     return value
+    #
+    # @client.setter
+    # def client(self, value):
+    #     logging.debug('add client: %s', value)
+    #     self.idle_client_set.add(value)
 
     @inlineCallbacks
     def queryBoxList(self):
@@ -50,7 +64,10 @@ class MailProxy:
             ret = yield defer.succeed({'errmsg': 'mailbox not exist', 'status': -1})
             returnValue(ret)
         yield self.client.select(mailbox)
-
+        global _index_
+        _index_ += 1
+        index = _index_
+        logging.debug('queryMailList %s, select %s ->', index, mailbox)
         if start is None:
             if end is None:
                 msg_set = MessageSet(None)
@@ -64,6 +81,7 @@ class MailProxy:
                                                     headerArgs=header_args,
                                                     uid=use_uid
                                                     )
+        logging.debug('queryMailList %s, select %s <-', index, mailbox)
         if mail_list:
             mail_flags_list = yield self.client.fetchFlags(msg_set, uid=use_uid)
             args = {}

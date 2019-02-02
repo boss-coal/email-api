@@ -10,7 +10,7 @@ class IMAP4Client(imap4.IMAP4Client):
 
     class LostListener:
 
-        def onConnectionLost(self):
+        def onConnectionLost(self, client):
             pass
 
 
@@ -49,7 +49,7 @@ class IMAP4Client(imap4.IMAP4Client):
         if self.connected:
             self.connected = False
             if self.lost_listener:
-                self.lost_listener.onConnectionLost()
+                self.lost_listener.onConnectionLost(self)
 
     def insecureLogin(self):
         self.login(self.username, self.password) \

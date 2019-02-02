@@ -16,8 +16,10 @@ class Account(IMAP4Client.LostListener):
         self.password = password
         self.smtp_host = smtp_host
         self.imap_host = imap_host
-        self.mail_proxy = None
-        self.connect_deferred = None
+        # self.mail_proxy = None
+        # self.connect_deferred = None
+        self.idle_proxy_set = set([])
+        self.busy_proxy_set = set([])
 
     def dbFormat(self, with_id=True):
         result = {
@@ -36,37 +38,60 @@ class Account(IMAP4Client.LostListener):
         ac.setting_id = account['mail_setting_id']
         return ac
 
+    @inlineCallbacks
+    def get_mail_proxy(self):
+        if len(self.idle_proxy_set) == 0:
+            yield self.login()
+        proxy = self.idle_proxy_set.pop()
+        self.busy_proxy_set.add(proxy)
+        ret = yield defer.succeed(proxy)
+        returnValue(ret)
+
+    def give_back_mail_proxy(self, proxy):
+        if proxy in self.busy_proxy_set:
+            self.idle_proxy_set.add(proxy)
+
     def login(self, conn_deferred=None):
-        self.connect_deferred = conn_deferred
-        self.mail_proxy = None
-        internal_deferred = defer.Deferred().addCallback(self.onLoginImapSuccess)
-        internal_deferred.addErrback(self.onLoginImapFailed)
+        # self.connect_deferred = conn_deferred
+        # self.mail_proxy = None
+        logging.info('create new client')
+        internal_deferred = defer.Deferred().addCallback(self.onLoginImapSuccess, conn_deferred)
+        internal_deferred.addErrback(self.onLoginImapFailed, conn_deferred)
         loginImap(self.username, self.password, self.imap_host, conn_deferred=internal_deferred)
         return internal_deferred
 
-    def onLoginImapSuccess(self, client):
-        if self.mail_proxy:
-            self.mail_proxy.client.setLostListener(None)
+    def onLoginImapSuccess(self, client, connect_deferred=None):
+        # if self.mail_proxy:
+        #     self.mail_proxy.client.setLostListener(None)
         client.setLostListener(self)
-        self.mail_proxy = MailProxy(client)
-        if self.connect_deferred:
-            self.connect_deferred.callback(client)
-            self.connect_deferred = None
+        # self.mail_proxy = MailProxy(client)
+        proxy = MailProxy(client)
+        self.idle_proxy_set.add(proxy)
+        logging.debug('%s idle, %s busy', len(self.idle_proxy_set), len(self.busy_proxy_set))
+        if connect_deferred:
+            connect_deferred.callback(client)
 
-    def onLoginImapFailed(self, err):
+    def onLoginImapFailed(self, err, connect_deferred=None):
         logging.error(err)
-        if self.connect_deferred:
-            self.connect_deferred.errback(err)
-            self.connect_deferred = None
+        if connect_deferred:
+            connect_deferred.errback(err)
 
     def connected(self):
-        return not not self.mail_proxy
-
+        return len(self.idle_proxy_set) + len(self.busy_proxy_set) > 0
 
     @inlineCallbacks
-    def onConnectionLost(self):
-        self.mail_proxy = None
-        yield self.login()
+    def onConnectionLost(self, client):
+        try:
+            for item in self.idle_proxy_set:
+                if item.client is client:
+                    self.idle_proxy_set.remove(item)
+                    break
+            for item in self.busy_proxy_set:
+                if item.client is client:
+                    self.busy_proxy_set.remove(item)
+        finally:
+            if not self.connected():
+                yield self.login()
 
 
 @singleton
