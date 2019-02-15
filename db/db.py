@@ -16,10 +16,13 @@ class DB:
             dirname, filename = os.path.split(os.path.abspath(__file__))
             db_path = os.path.join(dirname, config.db_name)
             # self.conn = sqlite3.connect(db_path)
-            self.conn = adbapi.ConnectionPool('sqlite3', db_path)
+            self.conn = adbapi.ConnectionPool('sqlite3', db_path, check_same_thread=False, cp_openfun=self.set_text_factory)
         except Exception, ex:
             logging.info("create db error %s", ex)
-    
+            
+    def set_text_factory(self, conn):
+        conn.text_factory = str
+        
     def close(self):
         if self.conn:
             self.conn.close()
