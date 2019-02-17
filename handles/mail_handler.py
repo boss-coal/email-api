@@ -10,6 +10,7 @@ import logging
 from db.dao import MailDao
 from util import toRemoteOrDbFormat, gmTimestampFromAscTime, gmTimestapFromIsoDate
 from flanker import mime
+from io import BytesIO
 
 mail_header_map = (
     # (db_name, remote_name, default_value)
@@ -296,8 +297,7 @@ class SendMailHandler(MailBaseHandler):
             self.finishWithError(errmsg='mime must contain key \'%s\'' % key)
         return mime_arg.get(key, default)
 
-    @inlineCallbacks
-    def task(self):
+    def parse_mime_parts(self):
         mime_arg = self.getArg('mime')
         mime_arg = json.loads(mime_arg)
         headers = self.getMimeArg(mime_arg, 'headers')
@@ -319,8 +319,8 @@ class SendMailHandler(MailBaseHandler):
             elif part['type'] == 'img':
                 msg_part = MIMEImage(open(part['img_path'], 'rb').read())
                 msg_part.add_header('Content-ID', '<%s>' % part['img_cid'].encode('utf-8'))
-                msg_part.add_header('Content-Disposition', 'inline', filename='music.png')
-                msg_part.set_param('name', 'music.png')
+                msg_part.add_header('Content-Disposition', 'inline', filename=part['filename'])
+                msg_part.set_param('name', part['filename'])
             else:
                 self.finishWithError()
             message_parts.append(msg_part)
@@ -334,6 +334,16 @@ class SendMailHandler(MailBaseHandler):
             message[k] = v.encode('utf-8')
 
         logging.debug(message.as_string())
+        return message, mime_arg, headers
+
+    @inlineCallbacks
+    def task(self):
+        message, mime_arg, headers = self.parse_mime_parts()
+        draft = int(self.getArg('draft', necessary=False, default=0))
+        if draft:
+            yield self.addToDrafts(message)
+            # todo: sync to local db
+            returnValue({'msg': 'save to Drafts'})
         receivers = self.getMimeArg(mime_arg, 'receivers')
         if len(receivers) > 1 and self.getMimeArg(mime_arg, 'mode',necessary=False) == 'single':
             self.rest = len(receivers)
@@ -356,8 +366,8 @@ class SendMailHandler(MailBaseHandler):
         start = int(last_sent_mail[0]['uuid']) + 1 if last_sent_mail else 1
         sent_mail = yield self.mail_proxy.queryMailList(sent_box, start)
         if sent_mail:
-                reactor.callLater(0, syncMailListToDb, sent_mail, sent_box, self.account)
-                returnValue({'data': sent_mail, 'msg': 'new messages in sent box'})
+            reactor.callLater(0, syncMailListToDb, sent_mail, sent_box, self.account)
+            returnValue({'data': sent_mail, 'msg': 'new messages in sent box'})
         returnValue(self.res)
 
     def getMessageString(self, message):
@@ -368,6 +378,13 @@ class SendMailHandler(MailBaseHandler):
     def sendMail(self, message, receivers):
         return sendmail(self.account.smtp_host, self.account.username, receivers, self.getMessageString(message),
                  username=self.account.username, password=self.account.password)
+
+    @inlineCallbacks
+    def addToDrafts(self, message):
+        with BytesIO() as msg_io:
+            msg = self.getMessageString(message)
+            msg_io.write(msg)
+            yield self.mail_proxy.addToDrafts(msg_io)
 
     def onSingleSendSuccess(self, result, rec):
         self.res.append((rec, 0, result))

@@ -165,10 +165,12 @@
 ### send mail request
     http://127.0.0.1:port/mail/send_mail
 #### data:
-    {"mime":{mail_content}}
+    {"mime":{mail_content}, "draft": 0/1}
 #### response:
     {"result":0, "data":[new_msg_in_sent_box], "errmsg":""}
 #### note:
+    1) draft: 非0时，直接发送；为0时，保存到草稿
+    2) mime的基本格式:
     {
         'headers': {
             'Subject': 'hello world',

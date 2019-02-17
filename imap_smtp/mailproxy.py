@@ -134,6 +134,12 @@ class MailProxy:
         yield self.editFlag(message_uid, ['\\Deleted'])
         yield self.client.expunge()
 
+    @inlineCallbacks
+    def addToDrafts(self, msg_io):
+        box = 'Drafts'
+        yield self.client.select(box)
+        yield self.client.append(box, msg_io)
+
 
     def editFlag(self, message_uid, flag, add=True):
         op = self.client.addFlags if add else self.client.removeFlags
