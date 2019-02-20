@@ -310,7 +310,6 @@ class SendMailHandler(MailBaseHandler):
                 msg_part = MIMEText(part['content'].encode('utf-8'), part['type'], 'utf-8')
             elif part['type'] == 'attachment':
                 msg_part = MIMEApplication(open(part['file_path'], 'rb').read())
-                msg_part['Content-Type'] = 'application/octet-stream'
                 msg_part['Content-Disposition'] = 'attachment; filename="%s"' % part['filename'].encode('utf-8')
             elif part['type'] == 'html-img':
                 multi_type = 'related'
