@@ -306,24 +306,28 @@ class SendMailHandler(MailBaseHandler):
         message_parts = []
         multi_type = 'mixed'
         for part in parts:
+            msg_part = None
             if part['type'] in ('plain', 'html'):
                 msg_part = MIMEText(part['content'].encode('utf-8'), part['type'], 'utf-8')
             elif part['type'] == 'attachment':
-                msg_part = MIMEApplication(open(part['file_path'], 'rb').read())
-                msg_part['Content-Disposition'] = 'attachment; filename="%s"' % part['filename'].encode('utf-8')
+                with open(part['file_path'], 'rb') as f:
+                    msg_part = MIMEApplication(f.read())
+                    msg_part['Content-Disposition'] = 'attachment; filename="%s"' % part['filename'].encode('utf-8')
             elif part['type'] == 'html-img':
                 multi_type = 'related'
                 content_child = MIMEText(part['content'].encode('utf-8'), 'html', 'utf-8')
                 msg_part = MIMEMultipart('alternative')
                 msg_part.attach(content_child)
             elif part['type'] == 'img':
-                msg_part = MIMEImage(open(part['img_path'], 'rb').read())
-                msg_part.add_header('Content-ID', '<%s>' % part['img_cid'].encode('utf-8'))
-                msg_part.add_header('Content-Disposition', 'inline', filename=part['filename'])
-                msg_part.set_param('name', part['filename'])
+                with open(part['img_path'], 'rb') as f:
+                    msg_part = MIMEImage(f.read())
+                    msg_part.add_header('Content-ID', '<%s>' % part['img_cid'].encode('utf-8'))
+                    msg_part.add_header('Content-Disposition', 'inline', filename=part['filename'])
+                    msg_part.set_param('name', part['filename'])
             else:
                 self.finishWithError()
-            message_parts.append(msg_part)
+            if msg_part:
+                message_parts.append(msg_part)
         if len(message_parts) == 1:
             message = message_parts[0]
         else:
