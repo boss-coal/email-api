@@ -5,6 +5,7 @@ from twisted.mail.smtp import sendmail
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.image import MIMEImage
+from email.mime.application import MIMEApplication
 import json
 import logging
 from db.dao import MailDao
@@ -308,7 +309,7 @@ class SendMailHandler(MailBaseHandler):
             if part['type'] in ('plain', 'html'):
                 msg_part = MIMEText(part['content'].encode('utf-8'), part['type'], 'utf-8')
             elif part['type'] == 'attachment':
-                msg_part = MIMEText(open(part['file_path'], 'rb').read(), 'base64', 'utf-8')
+                msg_part = MIMEApplication(open(part['file_path'], 'rb').read())
                 msg_part['Content-Type'] = 'application/octet-stream'
                 msg_part['Content-Disposition'] = 'attachment; filename="%s"' % part['filename'].encode('utf-8')
             elif part['type'] == 'html-img':
